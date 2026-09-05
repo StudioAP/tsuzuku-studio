@@ -16,6 +16,12 @@
 
 実行時の詳細は `browser-results.json` と `test-command-results.txt` に記録しています。空白と日本語を含む別フォルダでもビルドし、同じ内容ハッシュになることを確認しました。
 
+## Mac移行・本番公開後の再検証
+
+確認日：2026-09-06。Mac（Node.js 23.11.0、Python Playwright 1.57.0、Chromium 143）で `npm run check`、82件の単体テスト、`npm run build` を再実行してPASSしました。続いて19ブラウザシナリオをMacのlocalhostと公開URL `https://studioap.github.io/tsuzuku-studio/` の両方で実行し、全件PASSしました。
+
+GitHub ActionsのCIとPagesデプロイはcommit `fe6f6a8` で成功し、PagesはActions方式・HTTPS強制です。本番シナリオでも、テストが捕捉した範囲ではGET以外のHTTPリクエストと外部HTTPリクエストはありませんでした。これらはChromiumによる自動検証であり、iPhone Safariのネイティブ共有やHEIC対応を確認した結果ではありません。
+
 ## ブラウザで確認した操作
 
 デモ3写真から5出力、分割数変更、undo/redo、写真の結合・並置・分離、順番変更後の再自動配置、比率・拡大・形式の下書き復元を確認しました。
@@ -97,6 +103,6 @@ python tests/browser-smoke.py --browser webkit --base-url http://127.0.0.1:5173/
 | ホーム画面から起動 | Safariで追加し、再起動・下書き・共有の差を確認 | 未確認 |
 | オフライン | 初回読み込み後、機内モードで再起動・編集・書き出し | 未確認 |
 | 保存領域 | 通常タブ、プライベートブラウズ、サイトデータ削除を区別 | 未確認 |
-| GitHub Pages | Actions成功、HTTPS、本番URL、更新の反映 | 未実行 |
+| GitHub Pages | Actions成功、HTTPS、本番URL、更新の反映 | PASS（2026-09-06、commit `fe6f6a8`） |
 
 保存メニューの項目がない場合はアプリだけで強制できないため、まず個別保存を使います。ログインや画像送信サーバーを足して問題を回避しないでください。端末型番、iOS版、ブラウザ、ホーム画面起動の有無、実際の表示文言を記録すると、次の修正が具体的になります。

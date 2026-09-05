@@ -19,7 +19,7 @@ npm run dev
 
 ## 3. iPhoneで使えるURLにする
 
-GitHubリポジトリへ管理用のソースを置き、同梱のGitHub Actionsで `dist/` を公開する構成です。手順は `docs/DEPLOY.md` にあります。GitHubの認証・リポジトリ作成・公開設定はMac側で行います。この納品時点ではGitHubへのpushや公開はしていません。
+管理用ソースは [StudioAP/tsuzuku-studio](https://github.com/StudioAP/tsuzuku-studio) にあり、GitHub Actionsで `dist/` だけを [GitHub Pages](https://studioap.github.io/tsuzuku-studio/) へ公開しています。更新・復旧手順は `docs/DEPLOY.md` にあります。
 
 ## 4. 最初の実機テスト
 
