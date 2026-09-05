@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self' file:; base-uri 'none'; form-action 'none'">
+<title>つづく | Mac持ち帰り総合ガイド</title><style>
+:root { color-scheme: light; --ink:#23302e; --muted:#536560; --line:#d9e2df; --paper:#fffdf9; --accent:#24675a; }
+* {box-sizing:border-box} html {scroll-behavior:smooth} body {margin:0;color:var(--ink);background:#f3f4ef;font:16px/1.9 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;overflow-wrap:anywhere}
+a {color:var(--accent);text-decoration-thickness:1px;text-underline-offset:3px}
+.top {max-width:1240px;margin:auto;padding:52px 36px 28px} .eyebrow{font-size:12px;letter-spacing:.17em;font-weight:700;color:var(--accent)}
+h1{font-size:clamp(30px,4vw,49px);line-height:1.35;letter-spacing:-.025em;margin:14px 0 18px}.lead{max-width:800px;color:var(--muted)}
+.badge{display:inline-block;border:1px solid var(--line);background:var(--paper);border-radius:99px;font-size:13px;padding:4px 13px;margin:0 5px 8px 0}
+.layout{max-width:1240px;margin:auto;padding:0 36px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:34px;align-items:start}
+nav{position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto;padding:22px 18px;border:1px solid var(--line);border-radius:16px;background:var(--paper)}
+nav strong{font-size:13px} nav a{display:block;font-size:13px;line-height:1.6;margin:12px 0;text-decoration:none} nav a:hover{text-decoration:underline}
+main{min-width:0;background:var(--paper);padding:34px;border:1px solid var(--line);border-radius:20px}
+h2{font-size:24px;line-height:1.5;margin:52px 0 18px;padding-top:22px;border-top:1px solid var(--line);scroll-margin-top:24px}
+h3{font-size:18px;line-height:1.6;margin:30px 0 12px} p{margin:15px 0} strong{font-weight:700} .table-wrap{width:100%;overflow:auto;margin:24px 0;border:1px solid var(--line);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:14px;line-height:1.75} th,td{text-align:left;vertical-align:top;padding:13px 15px;border-bottom:1px solid var(--line)}
+th{background:#edf3ef}tr:last-child td{border-bottom:0}td:first-child{width:32%}code{font: .91em/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;background:#edf1ed;padding:2px 4px;border-radius:4px;overflow-wrap:anywhere}
+pre{overflow:auto;background:#edf1ed;padding:20px;border:1px solid var(--line);border-radius:12px;line-height:1.65}pre code{padding:0;background:none;overflow-wrap:normal}
+.notice{padding:18px 22px;border-left:4px solid var(--accent);background:#edf3ef;border-radius:0 12px 12px 0}.notice p{margin:0}
+.gallery{margin:24px 0}.gallery img{display:block;width:100%;height:auto;border-radius:10px;border:1px solid var(--line)}figcaption{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.65}
+.example{display:grid;grid-template-columns:1fr 1fr;gap:0;max-width:620px;margin:auto}.example img{border:0;border-radius:0}
+footer{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:20px;margin-top:34px}
+@media(max-width:850px){.layout{grid-template-columns:1fr;gap:18px;padding:0 18px 36px}.top{padding:32px 20px 16px}nav{position:static;max-height:none}nav a{display:inline-block;margin:7px 14px 7px 0}main{padding:24px 20px}h2{font-size:21px}body{font-size:15px}}
+@media print{body{background:white;font-size:10pt}.top,.layout{display:block;max-width:none;padding:0}nav{display:none}main{border:none;padding:0}h2{break-after:avoid}pre,table{break-inside:auto}.gallery{max-width:640px}a{color:inherit;text-decoration:none}}
+</style></head><body>
+<header class="top"><div class="eyebrow">TSUZUKU / MAC HANDOFF PACKAGE</div><h1>つづく。<br>Macへ持ち帰る、すべて。</h1>
+<p class="lead">ソース・設計・使い方・Codexへの引き継ぎ・公開手順を、ひとつのフォルダに。<br>このページは説明書です。アプリの起動は「Macで起動する」から進めてください。</p>
+<span class="badge">写真はブラウザ内で処理</span><span class="badge">ログイン不要</span><span class="badge">最後はInstagramで投稿</span></header>
+<div class="layout"><nav aria-label="目次"><strong>このガイドの内容</strong><a href="#section-1">1. まず何をすればよいか</a><a href="#section-2">2. 会話で確定したこと</a><a href="#section-3">3. 入っているもの・まだ行っていないこと</a><a href="#section-4">4. Macで起動する</a><a href="#section-5">5. 写真を選んで、つながる画像を作る</a><a href="#section-6">6. iPhoneに保存し、Instagramアプリで投稿する</a><a href="#section-7">7. 下書きとプライバシー</a><a href="#section-8">8. Codexへの引き継ぎ</a><a href="#section-9">9. 自分のGitHubで管理する</a><a href="#section-10">10. iPhone用のHTTPS URLを公開する</a><a href="#section-11">11. 検証済みと、未確認を分ける</a><a href="#section-12">12. 困ったときの確認</a><a href="#section-13">13. この版で行わないこと</a><a href="#section-14">14. 継続開発と更新</a><a href="#section-15">15. 資料とファイルの地図</a><a href="#section-16">16. ZIPの整合性を任意で確かめる</a><a href="#visuals">画面と出力例</a></nav><main>
+<div class="notice"><p><strong>最初は2つだけ。</strong><br>この説明を読む → <a href="02_CODEX_REQUEST.txt">Codexに渡す依頼文</a>を、<code>tsuzuku-studio</code>フォルダと一緒に渡す。<br>自分で試す場合は <code>npm run dev</code> から始めます。</p></div>
+
+<p>作成日：2026年9月5日。これは、前回納品した実装・資料と、別添の説明・画面キャプチャをひとつに集めた持ち帰り版です。<strong>このZIPだけをMacへ持っていけば、前回のZIPや個別添付を別に集める必要はありません。</strong></p>
+<p>このガイドは、同じフォルダの <code>01_MAC_GUIDE.html</code> でも読めます。HTML版は説明書なのでダブルクリックで開けます。アプリ本体の <a href="index.html"><code>index.html</code></a> は、ダブルクリックではなく、以下の起動コマンドで開いてください。</p>
+<h2 id="section-1">1. まず何をすればよいか</h2>
+<p>ZIPをMacに保存し、Finderで展開します。展開した <code>tsuzuku-studio</code> フォルダを、開発用の好きな場所に置いてください。中の一部のファイルだけを取り出さず、<strong>フォルダごと</strong>扱います。以前の作業フォルダがある場合、そちらを上書きせず別の場所で展開してください。</p>
+<p>最初に <a href="00_READ_ME_FIRST.txt"><code>00_READ_ME_FIRST.txt</code></a> を開きます。操作を自分で始める場合はこのガイドの「Macで起動」を、Codexから始める場合は「Codexへの引き継ぎ」を読んでください。Macでの確認だけなら、GitHubへの登録・公開はまだ不要です。</p>
+<div class="table-wrap" tabindex="0"><table>
+<thead>
+<tr>
+<th>今したいこと</th>
+<th>開くもの／行うこと</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>全体の説明を読む</td>
+<td><code>01_MAC_GUIDE.html</code> または <a href="MAC_HANDOFF.md"><code>MAC_HANDOFF.md</code></a></td>
+</tr>
+<tr>
+<td>Codexに続きを依頼する</td>
+<td>フォルダを作業対象にし、<a href="02_CODEX_REQUEST.txt"><code>02_CODEX_REQUEST.txt</code></a> の全文を渡す</td>
+</tr>
+<tr>
+<td>とりあえずMacで試す</td>
+<td>フォルダ内で <code>npm run dev</code> → デモを開く</td>
+</tr>
+<tr>
+<td>自分のiPhoneで使う</td>
+<td>Macで確認 → GitHub Pages等でHTTPS公開 → Safariで開く</td>
+</tr>
+<tr>
+<td>詳細な仕様を読む</td>
+<td><a href="docs/REQUIREMENTS.md"><code>docs/REQUIREMENTS.md</code></a> と <a href="docs/ARCHITECTURE.md"><code>docs/ARCHITECTURE.md</code></a></td>
+</tr>
+<tr>
+<td>全ファイルを確認する</td>
+<td><code>PACKAGE_CONTENTS.txt</code></td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="section-2">2. 会話で確定したこと</h2>
+<p>目的は、iPhoneの写真から、ページをスワイプすると横長写真がつながって見えるInstagramのフィード投稿用画像を、手軽に作ることです。例えば、横長写真Aを1〜2枚目にまたがらせ、後続のページに別の写真を組み合わせます。</p>
+<p><strong>最終投稿はInstagramアプリで手動で行います。</strong> このWebアプリは画像を作って書き出すところまでで、Instagramのログインや自動投稿は行いません。</p>
+<p>編集は<strong>自動配置＋簡単な修正</strong>を優先します。複雑な自由編集を増やすことより、写真を選んだら使える初期配置ができ、必要なところだけ直せることを重視します。</p>
+<p><strong>アプリのログイン不要、写真のサーバー送信なし、端末間の自動同期なし</strong>が確定条件です。写真の処理はブラウザ内で行います。MacBookのCodexで継続開発し、自分のGitHubでコードを管理して公開できる形を希望しています。</p>
+<p>GitHubへの開発用の認証と、アプリを使うときのログインは別の話です。アプリにログインを追加する必要はありませんが、自分のGitHubにコードを置くときは自分のGitHubアカウントで認証します。</p>
+<h2 id="section-3">3. 入っているもの・まだ行っていないこと</h2>
+<p>このフォルダには、編集画面、画像の読み込み・分割・書き出し、下書き保存の<strong>実装済みソース</strong>が入っています。要件定義だけの雛形ではありません。</p>
+<p>元のZIPに入っていた79ファイルは内容を変えずに残しています。ソース、ビルド済みの <code>dist/</code>、起動／ビルド用スクリプト、82件の単体テスト、ブラウザテスト、GitHub Actionsの設定、要件定義、設計書、引き継ぎ文、公開手順、検証記録、出力例、スクリーンショット、ライセンスを含みます。</p>
+<p>今回追加したのは、この総合ガイド、最初に読む説明、Codex用の依頼文、梱包時の検証記録、全ファイル一覧とチェックサム、会話に別添されていた3点の画面キャプチャです。別添の開始手順・要件定義・最終版のデスクトップ画像は、元のZIP内のものと同内容だったため、その既存ファイルで網羅しています。</p>
+<p><strong>GitHubへのpush・リポジトリ作成・本番デプロイは行っていません。MacのSafari、iPhone実機でのHEIC取り込み、写真アプリへの保存、Instagram投稿も未確認です。</strong> それらはMacへ持ち帰った後の確認事項として明記しています。</p>
+<p>Node.js本体、Mac/iPhoneのブラウザ、Codex本体、Git/GitHubのアカウントや認証情報、Pythonの任意テスト用ライブラリは同梱していません。あなたの実写真や本物の下書きも入っていません。コードと資料を持ち帰るために、このチャットを読み直す必要はない構成です。</p>
+<h2 id="section-4">4. Macで起動する</h2>
+<h3>必要な環境</h3>
+<p>このプロジェクトの <a href="package.json"><code>package.json</code></a> の条件は <strong>Node.js 22.12.0以上</strong>です。同梱の <a href=".nvmrc"><code>.nvmrc</code></a> は22系を指定しています。今回再検証に使用した環境はLinuxのNode.js 22.16.0／npm 10.9.2です。Macの実行環境で検証したという意味ではありません。</p>
+<p>ターミナルで <code>node --version</code> と <code>npm --version</code> を実行して確認します。Node.jsがない、または条件を満たさない場合は、Mac側でNode.jsを用意してから進めます。導入方法は既存のMac環境によって異なるため、Codexへ「このプロジェクトのNode.js条件を満たしているか確認し、未導入なら公式の導入手順を確認して案内して」と渡してください。すでにNode管理ツールを使っているMacでは、別方式を重ねて入れず、その環境を使います。</p>
+<p>通常の起動、単体テスト、ビルドには、<strong><code>npm install</code>、APIキー、環境変数、データベースは不要</strong>です。ブラウザテストだけは任意の追加環境が必要です。</p>
+<h3>フォルダへ移動する</h3>
+<p>Macの「ターミナル」を開き、<code>cd </code> と入力します。最後に半角スペースを入れ、そのあとFinderから <code>tsuzuku-studio</code> フォルダをターミナルへドラッグし、Enterを押してください。これで実際の保存場所に移動できます。</p>
+<p>次を実行し、現在の場所に <a href="package.json"><code>package.json</code></a> が見えることを確認します。</p>
+<pre><code class="language-bash">pwd
+ls
+node --version
+npm --version
+</code></pre>
+<h3>アプリを起動する</h3>
+<pre><code class="language-bash">npm run dev
+</code></pre>
+<p>Macのブラウザで <code>http://localhost:5173</code> を開きます。まずは<strong>「まずはデモで試す」</strong>を選びます。写真を用意しなくても、配置・調整・書き出しの流れを確認できます。</p>
+<p>ターミナルにサーバーの案内が出て止まって見えるのは、起動したまま待ち受けている状態です。利用中はそのターミナルを開いておきます。終了は <strong>Control + C</strong> です。</p>
+<p>このアプリの開発サーバーは標準でMac自身から使う設定です。<strong>Macでの <code>localhost</code> をそのままiPhoneに入力しても、このMacのアプリは開けません。</strong> iPhone実機での本番確認は、後述のHTTPS公開URLで行います。</p>
+<h3>ソースと配信用ビルドを確認する</h3>
+<p>開発サーバーを終了してから、次の順に実行します。</p>
+<pre><code class="language-bash">npm run check
+npm test
+npm run build
+npm run preview
+</code></pre>
+<p>再び <code>http://localhost:5173</code> を開きます。<code>npm run dev</code> は開発中のソースを、<code>npm run preview</code> は <code>dist/</code> に生成された配信用ファイルを配信します。ソースを変更した後は、プレビューや公開の前に必ず <code>npm run build</code> を実行してください。</p>
+<p>同じポートを使う開発サーバーを二重に起動しないでください。別ポートが必要な場合は <code>npm run dev -- --port 5174</code> または <code>npm run preview -- --port 5174</code> を使い、<code>http://localhost:5174</code> を開きます。</p>
+<h2 id="section-5">5. 写真を選んで、つながる画像を作る</h2>
+<p>基本の流れは <strong>写真選択 → おまかせ配置 → 必要な部分だけ修正 → プレビュー → 書き出し → 保存 → Instagramアプリで投稿</strong> です。</p>
+<p>最初は、横長写真1枚で試します。写真の設定を「2枚」「全体を残す」にし、横につながった表示と1枚ずつの表示で見え方を確認してください。書き出して保存した後、Instagramアプリでは左側の画像、右側の画像の順に選びます。</p>
+<div class="table-wrap" tabindex="0"><table>
+<thead>
+<tr>
+<th>できること</th>
+<th>この実装の内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>自動配置</td>
+<td>写真の縦横比から分割数を提案。写真の内容を理解するAIではありません。</td>
+</tr>
+<tr>
+<td>つながる分割</td>
+<td>1写真・1組につき1〜6枚。1つの横長レイアウトからページを切り出します。</td>
+</tr>
+<tr>
+<td>簡単な修正</td>
+<td>順番、分割数、全体表示／枠いっぱい、拡大、縦横位置、背景、元に戻す・やり直し。</td>
+</tr>
+<tr>
+<td>2写真の組み合わせ</td>
+<td>隣の写真と一組にし、上下／左右に並べる、または重ねる。組み合わせの選択は手動です。</td>
+</tr>
+<tr>
+<td>確認</td>
+<td>横につながった表示と、1枚ずつのスワイプ表示。</td>
+</tr>
+<tr>
+<td>書き出し</td>
+<td>JPEG／PNG、連番、同じサイズ。画像内にページ番号や透かしを加えません。</td>
+</tr>
+<tr>
+<td>保存</td>
+<td>対応環境でのファイル共有、個別保存・画像を開く、ZIP。</td>
+</tr>
+<tr>
+<td>下書き</td>
+<td>このブラウザに1件自動保存。任意で <code>.tsuzuku</code> ファイルに保存・再読み込み。</td>
+</tr>
+</tbody>
+</table></div>
+<p>位置や拡大は画面の設定で調整する実装です。自由ドラッグやピンチ操作による総合キャンバスエディターを実装済みと解釈しないでください。</p>
+<h3>余白と切り取りの違い</h3>
+<p>左右の画像を別々に切り取らず、写真全体に共通の位置・拡大率を適用してからページごとに描画します。ページの継ぎ目で構図が変わらないための設計です。</p>
+<p>元写真と、つないだ投稿枠の形が違う場合、<strong>写真の全体を残すなら外側に余白が必要</strong>です。「枠いっぱい」は余白を減らす代わりに、写真の一部が切れることがあります。「全体を残す」「余白ゼロ」「好きな投稿比率」の3つを常に同時には満たせません。</p>
+<p>例として、3:2の横長写真に対し、3:4を2枚つなぐと同じ3:2になります。一方、4:5を2枚つなぐと8:5なので、3:2の写真とは比率が異なります。</p>
+<p>初期値は4:5、JPEG、「全体を残す」、装飾用の外枠を加えないスタイルです。「余白なし」というスタイル名でも、比率差による外側の余白まで消す意味ではありません。</p>
+<h3>入力・出力の上限と画質</h3>
+<p>実装上の入力は最大20写真、1ファイル40MBまでです。JPEG／PNG／WebPに対応し、HEICはブラウザが読み込める場合に対応します。すべてのHEICファイルでの成功を保証しません。</p>
+<p>出力は最大20枚です。4:5は1080×1350、3:4は1080×1440、1:1は1080×1080で、1つの投稿内は同じサイズにそろえます。これは同梱アプリの仕様であり、Instagram側の今後の仕様変更まで固定するものではありません。プラットフォーム側の根拠は <a href="docs/SOURCES.md"><code>docs/SOURCES.md</code></a> に残しています。</p>
+<p><strong>元の写真ファイルは変更しません。</strong> ただし端末内の作業用コピーは長辺4096px・約8MP以内のJPEGへ変換します。PNGで書き出しても、この取り込み時のJPEG化をなかったことにはできません。透明部分は白になり、元EXIFなどのメタデータ、元のHDR・広色域特性・透過をそのまま保持する用途ではありません。無加工・無劣化の分割ツールではありません。</p>
+<p>極端なパノラマ、低解像度の画像、多数の高解像度写真では、画質やメモリに制約が出る可能性があります。上限以内なら、どのiPhoneでも快適に扱えるという保証ではありません。</p>
+<h2 id="section-6">6. iPhoneに保存し、Instagramアプリで投稿する</h2>
+<p>書き出しで画像が生成されたら、対応環境では「共有メニューを開く」を使います。iPhone側に画像保存の項目があれば選んでください。表示される項目や複数枚保存の可否は端末側によります。</p>
+<p>一括保存が使えなければ、書き出し一覧の1枚ずつの「保存」や「画像を開く」を使います。画像を開いた後も、利用可能な保存操作は端末側で確認してください。ダウンロードが「ファイル」に入った場合と「写真」に保存された場合を区別し、<strong>写真アプリに必要な全枚数がそろっているか実際に確認</strong>します。ZIPは特にMacでまとめて受け取る用途です。ZIPをそのままInstagramの複数画像として投稿する設計ではありません。</p>
+<p>Instagramアプリで新規のフィード投稿を作り、複数選択で <strong>01 → 02 → 03…</strong> の順に選びます。写真アプリの表示順や、ファイル名だけに頼らず、アプリの書き出し一覧と見た目を照合してください。画像ごとの切り抜き・回転を変えず、投稿前のプレビューでつながりと比率を確認します。</p>
+<p>Webアプリで共有処理が完了したことは、「写真」に保存されたことやInstagramへの投稿が完了したことの証明ではありません。保存・投稿の最後の確認はユーザーが行います。Instagram側での表示・再圧縮も、このアプリからは制御できません。</p>
+<h2 id="section-7">7. 下書きとプライバシー</h2>
+<p>下書きは<strong>その端末・そのブラウザの保存領域に1件</strong>です。Macでの編集がiPhoneに自動で出てくることはありません。複数タブの同時編集にも対応していないため、同じ下書きは1つのタブで扱ってください。</p>
+<p>サイトデータの削除、容量不足、ブラウザの動作などで下書きが失われる可能性があります。大切な編集は任意の <code>.tsuzuku</code> ファイルにも保存します。ファイルを手動で持ち運んで読み込むことはできますが、これは端末間の自動同期ではありません。</p>
+<p><code>.tsuzuku</code> には作業用写真が含まれます。外部に共有したり、Gitへ追加したりしないでください。下書きファイルの読み込み上限は100MBで、このアプリが扱う形式を対象にしています。汎用ZIPや他社アプリのプロジェクトを開く機能ではありません。</p>
+<p>アプリが写真をサーバーへ送らなくても、初回アクセスや更新ではアプリ本体の取得通信があります。配信事業者の通常のアクセスログや、ユーザー自身が選んだ共有先、写真・ファイルのOS側クラウド同期までは、このアプリの制御対象ではありません。</p>
+<p>「このブラウザのデータを消す」操作は、アプリ内の写真・下書きに対する操作です。元の写真や、すでに保存した出力まで削除するものではありません。</p>
+<h2 id="section-8">8. Codexへの引き継ぎ</h2>
+<p>MacのCodexで <strong><code>tsuzuku-studio</code> フォルダ全体</strong>を作業対象にします。<code>dist/</code> だけや画像だけを渡さないでください。続いて、同梱の <strong><a href="02_CODEX_REQUEST.txt"><code>02_CODEX_REQUEST.txt</code></a> の全文</strong>を依頼文として貼り付けます。</p>
+<p>依頼文には、確定条件、最初に読む資料、Macの環境確認、構文確認・テスト・ビルド、GitHub管理、HTTPS公開、iPhone実機での最短経路の確認、未確認事項の扱い、pushや公開の前にユーザーへ確認する条件をまとめています。既存実装を全面的に作り直さないことも明記しました。</p>
+<p><a href="AGENTS.md"><code>AGENTS.md</code></a> は継続開発で維持する条件、<a href="docs/CODEX_HANDOFF.md"><code>docs/CODEX_HANDOFF.md</code></a> は元の引き継ぎ資料です。コード変更時はこれらと要件定義を優先し、入口である写真の取り込みと、出口である保存が使いやすいかを先に確認してください。</p>
+<p>テストには合成画像・デモを使います。<strong>実写真、下書き、個人情報が写ったスクリーンショットをCodexや外部ツールへ送って調査する運用にしないでください。</strong> iPhone上の実写真の確認結果は、端末型番・OS版・エラーメッセージ・操作手順など、必要な事実を文章で伝えます。</p>
+<h2 id="section-9">9. 自分のGitHubで管理する</h2>
+<p>詳細な元手順は <a href="docs/DEPLOY.md"><code>docs/DEPLOY.md</code></a> にあります。作業場所は、<a href="package.json"><code>package.json</code></a> と <code>.github/</code> がある <code>tsuzuku-studio</code> フォルダです。このZIP自体をリポジトリに置くのではなく、展開したソースを管理します。</p>
+<p>Mac側でGitと自分のGitHubの認証を用意し、空のリポジトリを作成します。リポジトリ名の例は <code>tsuzuku-studio</code> です。初回のコマンド例を使う場合、GitHub側でREADME等を事前作成していない空のリポジトリを用意すると、初回履歴の衝突を避けやすくなります。既存リポジトリに入れるときはCodexに既存状態を確認させます。</p>
+<p><strong>Publicにしたリポジトリ内のコードと資料は公開されます。</strong> リポジトリの公開範囲と、Pagesの利用条件・公開範囲は、Macで設定するときに確認してください。ユーザーのアカウント名・リポジトリ名・認証情報・公開範囲をこちらで決めてはいません。</p>
+<p>以下は<strong>新しいGit管理を始めるときの例</strong>です。<code>YOUR_GITHUB_REPOSITORY_URL</code> はGitHubに表示される自分のSSHまたはHTTPSのリポジトリURLに置き換えます。そのまま入力する値ではありません。</p>
+<pre><code class="language-bash">git init
+git add .
+git status --short
+</code></pre>
+<p>ここで必ず対象ファイルを確認します。個人写真・秘密情報がないことを確認してから次へ進みます。</p>
+<pre><code class="language-bash">git commit -m "Initial local-only carousel editor"
+git branch -M main
+git remote add origin YOUR_GITHUB_REPOSITORY_URL
+git remote -v
+</code></pre>
+<p>公開先・公開範囲をユーザー自身が確認した後に、初めてpushします。</p>
+<pre><code class="language-bash">git push -u origin main
+</code></pre>
+<p>Gitに作者名・メールアドレスの設定を求められた場合は、Mac側で使用する値を決めます。推測した他人の値やダミーの認証情報を入れないでください。リポジトリが既にGit管理されている、<code>origin</code> が既にある、リモートに履歴がある場合は、上の初回コマンドを繰り返さず、<code>git status</code> と <code>git remote -v</code> を確認し、Codexへ現状を伝えます。強制pushで解決しないでください。</p>
+<p><a href=".gitignore"><code>.gitignore</code></a> は <code>dist/</code>、<code>node_modules/</code>、<code>.env</code>、<code>.env.*</code>、<code>private-photos/</code>、<code>exports/</code>、<code>*.tsuzuku</code>、<code>test-results/</code>、<code>.venv/</code> などを除外します。ただし<strong>個人写真の自動検出機能ではありません。</strong> 別の場所に写真を置くとGitの対象になる可能性があります。commit前の確認を省略しないでください。合成されたデモ画像・テスト用fixture・既存の画面例は同梱物です。</p>
+<p>認証情報、アクセストークン、秘密鍵は、チャット・コード・資料・Gitに書き込みません。アプリ用のAPIキーや <code>.env</code> は不要です。</p>
+<h2 id="section-10">10. iPhone用のHTTPS URLを公開する</h2>
+<p>GitHub Pages向けの <a href=".github/workflows/pages.yml"><code>.github/workflows/pages.yml</code></a> を同梱しています。元資料の手順では、リポジトリの <strong>Settings → Pages → Build and deployment → Source</strong> で <strong>GitHub Actions</strong> を選びます。実際の管理画面や利用条件は設定時に確認してください。</p>
+<p>同梱ワークフローはmainへのpush、または手動実行で構文チェック・テスト・ビルドを行い、<strong><code>dist/</code> だけ</strong>を公開アーティファクトにします。開発フォルダ全部をWebサイトとして配信する構成ではありません。一方、Publicリポジトリ自体のソースと資料は別途公開される点には注意してください。</p>
+<p>初回push時にPages設定が未完了だった場合は、設定後に <strong>Actions → Deploy to GitHub Pages → Run workflow</strong> で再実行します。失敗時はジョブのログを読み、成功したことを確認します。公開URLはGitHubの設定画面や完了したActionsに表示されたものを使い、推測したURLだけで公開成功と判断しないでください。</p>
+<p>公開URLをHTTPSで開き、デモと書き出しを確認します。利用できる設定ではHTTPSの強制を有効にします。その後、そのURLをiPhoneのSafariで開きます。<strong>iPhoneからMacのHTTPローカルIPを開く方法は、この納品版の標準確認経路ではありません。</strong></p>
+<p>このアプリはURLを開いた人が使える構成です。あなたの写真や下書きをサイトに掲載する設計ではありませんが、アプリ自体へのアクセス制限も付いていません。</p>
+<p>日常利用の入口としてホーム画面へ追加する場合は、Safari側の共有・ホーム画面追加の機能を使います。具体的な表示はiOS版により異なります。ホーム画面からの起動・保存・下書きについても、Safariのタブからの利用と分けて実機確認します。</p>
+<p>別の静的ホスティングを使う場合の構成は、ビルドコマンド <code>npm run build</code>、配信対象 <code>dist/</code>、HTTPSです。サーバーの常時稼働、写真アップロードAPI、データベースは作りません。サービス側が解析・外部スクリプト等を自動挿入する場合も、写真を送らないという条件に影響しないか確認してください。</p>
+<h2 id="section-11">11. 検証済みと、未確認を分ける</h2>
+<p>今回の再梱包時には、この同梱コードで <strong><code>npm run check</code>、<code>npm test</code>、<code>npm run build</code> が成功</strong>しました。構文確認は16モジュール、単体テストは82件です。既存79ファイルは、ビルド後も元のZIPとバイト単位で同一でした。</p>
+<p>元の納品時の記録には、LinuxのChromiumを使った19ブラウザシナリオ、スマホ幅の表示、JPEG／PNG生成、画像境界、下書き復元、共有APIの模擬テスト、オフライン確認等が含まれています。詳細は <a href="docs/TESTING.md"><code>docs/TESTING.md</code></a>、<a href="docs/browser-results.json"><code>docs/browser-results.json</code></a>、<a href="docs/test-command-results.txt"><code>docs/test-command-results.txt</code></a> にあります。<strong>その19シナリオは今回の再梱包では再実行していません。</strong></p>
+<p>追加した今回の確認内容は <a href="docs/PACKAGING_REPORT.md"><code>docs/PACKAGING_REPORT.md</code></a> と <a href="docs/packaging-validation.txt"><code>docs/packaging-validation.txt</code></a> に区別して記録しています。Linuxのテストやスマホ幅の表示確認を、iPhone実機の確認済みという意味に読み替えないでください。</p>
+<p>最優先の実機チェックは次の経路です。</p>
+<p><strong>公開HTTPS URL → iPhoneの横長写真1枚 → 2枚につなぐ → 2枚とも写真アプリに保存 → Instagramで順番に選択 → プレビューでつながりを確認。</strong></p>
+<p>その後に、実HEICの向き・色、JPEG／PNG、複数保存と個別保存、共有のキャンセル、保存順、実写真5〜10枚での負荷、ホーム画面起動、オフライン、下書き復元を確認します。チェック表は <a href="docs/TESTING.md"><code>docs/TESTING.md</code></a> にあります。端末型番、iOS版、起動方法、実際のメニュー文言、結果を記録してください。</p>
+<h3>任意のブラウザテストを再実行する</h3>
+<p>通常の起動には不要ですが、描画・画像保存を修正した場合などは、元の <a href="docs/TESTING.md"><code>docs/TESTING.md</code></a> に従ってブラウザテストを実行します。Python環境が必要です。</p>
+<p>ターミナルAで、プロジェクトフォルダから次を実行し、サーバーを起動したままにします。</p>
+<pre><code class="language-bash">npm run build
+npm run dev
+</code></pre>
+<p>別のターミナルBも同じフォルダへ移動してから、次を実行します。初回の依存導入にはネットワーク接続が必要です。</p>
+<pre><code class="language-bash">python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+python -m playwright install chromium
+python tests/browser-smoke.py --base-url http://127.0.0.1:5173/dist/
+</code></pre>
+<p>テスト出力は <code>test-results/</code> に生成され、標準ではGit対象外です。テスト用のPythonライブラリやブラウザ本体は、このZIPに含めていません。WebKitでの追加確認方法も元の検証資料にありますが、その結果もiPhone実機の代わりではありません。</p>
+<h2 id="section-12">12. 困ったときの確認</h2>
+<div class="table-wrap" tabindex="0"><table>
+<thead>
+<tr>
+<th>状況</th>
+<th>まず確認すること</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>node</code> / <code>npm</code> が見つからない</td>
+<td>MacのNode.js導入状態を確認。アプリのnpm依存を入れる問題とは別です。</td>
+</tr>
+<tr>
+<td><a href="package.json"><code>package.json</code></a> がない／スクリプトがない</td>
+<td>ターミナルが <code>tsuzuku-studio</code> の中か、<code>pwd</code> と <code>ls</code> で確認。</td>
+</tr>
+<tr>
+<td><code>EADDRINUSE</code> が出る</td>
+<td>既に起動しているサーバーをControl + Cで終了するか、別ポートを使う。</td>
+</tr>
+<tr>
+<td>HTMLを開いてもアプリが動かない</td>
+<td><a href="index.html"><code>index.html</code></a> の直接起動をやめ、<code>npm run dev</code> からlocalhostを開く。</td>
+</tr>
+<tr>
+<td>Macでは動くがiPhoneで開けない</td>
+<td>Macのlocalhostではなく、実際に公開されたHTTPS URLか確認。</td>
+</tr>
+<tr>
+<td>HEICが読めない</td>
+<td>端末・ブラウザ・ファイルの条件を記録し、JPEG等で切り分け。外部変換サイトへの送信で回避しない。</td>
+</tr>
+<tr>
+<td>「全体を残す」でも余白がある</td>
+<td>元写真と全ページをつないだ枠の比率差。切り取りを許容するか、比率・分割数を調整。</td>
+</tr>
+<tr>
+<td>写真が意図せず切れる</td>
+<td>「枠いっぱい」と拡大率を確認し、「全体を残す」に戻して比較する。</td>
+</tr>
+<tr>
+<td>保存項目が出ない</td>
+<td>共有メニューと個別保存を切り分け、HTTPS・ブラウザ・実際の表示を確認する。</td>
+</tr>
+<tr>
+<td>保存後の順番が違う</td>
+<td>アプリの連番と画像内容で確認し、Instagramで左から正しい順に選び直す。</td>
+</tr>
+<tr>
+<td>書き出し後の画質が足りない</td>
+<td>元写真の解像度、作業用縮小、拡大率、分割数を確認。出力幅だけで元の細部は増えません。</td>
+</tr>
+<tr>
+<td>下書きが出ない</td>
+<td>同じ端末・ブラウザ・URLで開いているか、サイトデータを削除していないか確認。バックアップがあれば読み込む。</td>
+</tr>
+<tr>
+<td>更新が見えない</td>
+<td>ビルド、push、Actions成功、公開URLを順に確認。下書き退避前にサイトデータを消さない。</td>
+</tr>
+<tr>
+<td>Pagesの処理が失敗した</td>
+<td>設定、権限、対象ブランチ、失敗ジョブのログを確認。公開済みと決めつけない。</td>
+</tr>
+<tr>
+<td>Gitが認証や作者情報を求める</td>
+<td>自分のMacとGitHubの設定を確認。トークンや秘密鍵をチャットへ貼らない。</td>
+</tr>
+</tbody>
+</table></div>
+<p>同じサイトのデータを消す操作は、キャッシュだけでなく下書きにも影響する可能性があります。更新の切り分けでデータ削除が必要になった場合も、先に下書きファイルを退避します。</p>
+<h2 id="section-13">13. この版で行わないこと</h2>
+<p>外部AIによる構図認識・自動ペアリング、自由ドラッグ・回転・文字入れ、動画・Live Photoの動画部分・RAW現像、複数プロジェクト一覧、複数タブの競合制御、すべてのHEIC変種に対応する変換、無加工・無劣化の分割は未実装または対象外です。</p>
+<p>ログイン、クラウドへの写真保存、自動同期、Instagram API、自動投稿・予約投稿、アクセス解析も追加していません。今回の目的を満たすために、これらを必須の開発項目に戻さないでください。</p>
+<h2 id="section-14">14. 継続開発と更新</h2>
+<p>まず実機の取り込みと保存を確認し、その後で操作数や配置提案を少しずつ改善します。写真をサーバーに送らない、左右を同じ座標で切り出す、共有ボタンのクリックから直ちに共有を呼ぶ、1ページずつ描画してメモリ消費を抑える、という設計を維持します。</p>
+<p>変更後は <code>npm run check</code>、<code>npm test</code>、<code>npm run build</code> を実行します。画像処理・共有・保存を変えたときはブラウザテストとiPhone実機チェックも行います。差分と個人ファイルの混入を確認してcommitし、ユーザーの了承後にpushします。Actionsが成功し、公開URLで変更が見えることまで確認してください。</p>
+<p><code>dist/</code> は生成物でありGit管理対象外です。そこだけを直接編集せず、元ソースを編集して再ビルドします。元ソースと公開物を別々の実装として育てないでください。</p>
+<h2 id="section-15">15. 資料とファイルの地図</h2>
+<div class="table-wrap" tabindex="0"><table>
+<thead>
+<tr>
+<th>場所</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="00_READ_ME_FIRST.txt"><code>00_READ_ME_FIRST.txt</code></a></td>
+<td>最初に読む短い案内。標準のテキストエディタで開けます。</td>
+</tr>
+<tr>
+<td><code>01_MAC_GUIDE.html</code></td>
+<td>この総合ガイドの見やすいHTML版。外部通信なしで説明を読めます。</td>
+</tr>
+<tr>
+<td><a href="02_CODEX_REQUEST.txt"><code>02_CODEX_REQUEST.txt</code></a></td>
+<td>そのまま渡せる、今回の持ち帰り版の依頼文。</td>
+</tr>
+<tr>
+<td><a href="MAC_HANDOFF.md"><code>MAC_HANDOFF.md</code></a></td>
+<td>このガイドのMarkdown原稿。</td>
+</tr>
+<tr>
+<td><a href="START_HERE.md"><code>START_HERE.md</code></a></td>
+<td>前回、別添でも渡した開始手順。</td>
+</tr>
+<tr>
+<td><a href="README.md"><code>README.md</code></a></td>
+<td>元のアプリ説明、機能、制約、コマンド。</td>
+</tr>
+<tr>
+<td><a href="AGENTS.md"><code>AGENTS.md</code></a></td>
+<td>継続開発で維持する条件。</td>
+</tr>
+<tr>
+<td><a href="docs/REQUIREMENTS.md"><code>docs/REQUIREMENTS.md</code></a></td>
+<td>要件定義・対象範囲・受け入れ条件。</td>
+</tr>
+<tr>
+<td><a href="docs/ARCHITECTURE.md"><code>docs/ARCHITECTURE.md</code></a></td>
+<td>分割座標、画像処理、保存、設計判断。</td>
+</tr>
+<tr>
+<td><a href="docs/DEPLOY.md"><code>docs/DEPLOY.md</code></a></td>
+<td>GitHub管理とPagesの公開・更新。</td>
+</tr>
+<tr>
+<td><a href="docs/CODEX_HANDOFF.md"><code>docs/CODEX_HANDOFF.md</code></a></td>
+<td>元のCodex引き継ぎ、優先順位と未実装。</td>
+</tr>
+<tr>
+<td><a href="docs/TESTING.md"><code>docs/TESTING.md</code></a></td>
+<td>元の検証内容、再実行方法、実機チェック表。</td>
+</tr>
+<tr>
+<td><a href="docs/SOURCES.md"><code>docs/SOURCES.md</code></a></td>
+<td>設計時の一次資料と、その資料の位置付け。</td>
+</tr>
+<tr>
+<td><a href="docs/browser-results.json"><code>docs/browser-results.json</code></a></td>
+<td>元のブラウザシナリオの結果。</td>
+</tr>
+<tr>
+<td><a href="docs/test-command-results.txt"><code>docs/test-command-results.txt</code></a></td>
+<td>元の構文・テスト・ビルドの記録。</td>
+</tr>
+<tr>
+<td><a href="docs/PACKAGING_REPORT.md"><code>docs/PACKAGING_REPORT.md</code></a></td>
+<td>今回の統合範囲、検証、未確認事項。</td>
+</tr>
+<tr>
+<td><a href="docs/packaging-validation.txt"><code>docs/packaging-validation.txt</code></a></td>
+<td>今回再実行したコマンドの出力。</td>
+</tr>
+<tr>
+<td><code>docs/screenshots/</code></td>
+<td>元の最終版の画面例。実機iPhoneの写真ではありません。</td>
+</tr>
+<tr>
+<td><code>docs/screenshots/conversation/</code></td>
+<td>会話に別添されていた別版・別サイズの画面例。最終版との差を残して保管。</td>
+</tr>
+<tr>
+<td><code>examples/panorama-2/</code></td>
+<td>デモを実際に2枚に書き出した例。<code>01.png</code>、<code>02.png</code>、説明。</td>
+</tr>
+<tr>
+<td><code>src/</code>、<code>styles/</code>、<code>public/</code></td>
+<td>アプリのJavaScript、CSS、アイコン。</td>
+</tr>
+<tr>
+<td><a href="index.html"><code>index.html</code></a>、<a href="manifest.webmanifest"><code>manifest.webmanifest</code></a>、<a href="sw.js"><code>sw.js</code></a></td>
+<td>アプリの入口、ホーム画面用情報、キャッシュ処理。</td>
+</tr>
+<tr>
+<td><code>scripts/</code></td>
+<td>開発配信、構文チェック、ビルド。</td>
+</tr>
+<tr>
+<td><code>tests/</code>、<a href="requirements-dev.txt"><code>requirements-dev.txt</code></a></td>
+<td>単体・ブラウザテストと任意のPythonテスト依存。</td>
+</tr>
+<tr>
+<td><code>dist/</code></td>
+<td>ビルド済みの配信対象。変更後は再ビルド。</td>
+</tr>
+<tr>
+<td><a href="package.json"><code>package.json</code></a>、<a href="package-lock.json"><code>package-lock.json</code></a>、<a href=".nvmrc"><code>.nvmrc</code></a></td>
+<td>実行コマンドとNode環境の条件。</td>
+</tr>
+<tr>
+<td><code>.github/workflows/</code></td>
+<td>CIとGitHub Pages公開用の設定。</td>
+</tr>
+<tr>
+<td><a href=".gitignore"><code>.gitignore</code></a>、<a href="LICENSE"><code>LICENSE</code></a></td>
+<td>Git対象外の設定、元のMITライセンス。</td>
+</tr>
+<tr>
+<td><code>PACKAGE_CONTENTS.txt</code>、<code>CHECKSUMS.sha256</code></td>
+<td>全ファイルの一覧と整合性確認。</td>
+</tr>
+</tbody>
+</table></div>
+<p>Finderでドットから始まる名前が見えなくても、ZIPには <code>.github/</code>、<a href=".gitignore"><code>.gitignore</code></a>、<a href=".nvmrc"><code>.nvmrc</code></a>、<a href="dist/.nojekyll"><code>dist/.nojekyll</code></a> を含めています。確認するときはターミナルの <code>ls -a</code> が使えます。</p>
+<h2 id="section-16">16. ZIPの整合性を任意で確かめる</h2>
+<p>ZIPを展開した直後、フォルダ内で次を実行すると、同梱ファイルの内容をSHA-256で確認できます。</p>
+<pre><code class="language-bash">shasum -a 256 -c CHECKSUMS.sha256
+</code></pre>
+<p>チェックサムファイル自身は対象外です。これは輸送中の破損や意図しない差を見つける補助で、デジタル署名や第三者による安全性証明ではありません。開発でファイルを変更した後は、そのファイルが元のチェックサムと違うこと自体は正常です。</p>
+<p><strong>最初の一歩は、Macで <code>tsuzuku-studio</code> を開き、デモを動かすか、<a href="02_CODEX_REQUEST.txt"><code>02_CODEX_REQUEST.txt</code></a> を渡すことです。</strong> このフォルダ全体を手元に置けば、仕様の理解・コードの確認・継続開発・公開・実機確認を同じ場所から進められます。</p>
+
+<h2 id="visuals">画面と出力例</h2><p>以下は同梱のデモを使った画面・出力例です。iPhone実機での保存成功を示すものではありません。</p>
+<figure class="gallery"><a href="docs/screenshots/editor-desktop.png"><img src="docs/screenshots/editor-desktop.png" alt="つづくのデスクトップ編集画面" loading="lazy"></a><figcaption>元の納品ZIPに含まれる編集画面。クリックすると画像を開けます。</figcaption></figure>
+<figure class="gallery"><div class="example"><img src="examples/panorama-2/01.png" alt="横長デモ写真の1枚目" loading="lazy"><img src="examples/panorama-2/02.png" alt="横長デモ写真の2枚目" loading="lazy"></div><figcaption>2枚の出力例を番号順に並べたもの。独立したPNGをつなげて表示しています。元ファイルは examples/panorama-2/ にあります。</figcaption></figure>
+<p><a href="docs/screenshots/editor-mobile.png">モバイル幅の編集画面</a> ／ <a href="docs/screenshots/export-mobile.png">書き出し画面</a> ／ <a href="docs/PACKAGING_REPORT.md">今回の梱包記録</a></p>
+<footer>2026年9月5日作成。外部フォント・スクリプトを使わない同梱説明書。内容の原稿は MAC_HANDOFF.md。ソースと資料は元の納品版を維持し、説明と梱包記録を追加しています。</footer>
+</main></div></body></html>

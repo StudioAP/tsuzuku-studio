@@ -1,0 +1,16 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {crc32,makeZip,readZip} from '../src/zip.js';
+const enc=new TextEncoder(),dec=new TextDecoder();
+test('CRC32 matches the public standard check vector',()=>assert.equal(crc32(enc.encode('123456789')),0xcbf43926));
+test('ZIP STORE roundtrip supports Japanese and binary files',async()=>{const zip=await makeZip([{name:'投稿の順番.txt',data:'01 → 02\n'},{name:'assets/a.jpg',data:new Uint8Array([0,1,255])}]);const files=await readZip(zip);assert.equal(dec.decode(files.get('投稿の順番.txt')),'01 → 02\n');assert.deepEqual([...files.get('assets/a.jpg')],[0,1,255]);});
+test('empty ZIP is valid',async()=>assert.equal((await readZip(await makeZip([]))).size,0));
+for(const name of ['../x','/x','a/../b','a\\b','a//b','a/./b','bad\0name'])test(`reject unsafe path ${JSON.stringify(name)}`,async()=>assert.rejects(()=>makeZip([{name,data:'x'}])));
+test('reject duplicate names',async()=>assert.rejects(()=>makeZip([{name:'x',data:''},{name:'x',data:''}])));
+test('reject over 64 entries',async()=>assert.rejects(()=>makeZip(Array.from({length:65},(_,i)=>({name:`a${i}`,data:''})))));
+test('reject a corrupt image payload',async()=>{const b=new Uint8Array(await(await makeZip([{name:'x',data:'abc'}])).arrayBuffer());b[31]^=0xff;await assert.rejects(()=>readZip(new Blob([b])));});
+test('reject truncation and trailing junk',async()=>{const z=await makeZip([{name:'a',data:'b'}]);await assert.rejects(()=>readZip(z.slice(0,z.size-1)));await assert.rejects(()=>readZip(new Blob([z,'junk'])));});
+test('reject compressed input rather than inflating arbitrary data',async()=>{const b=new Uint8Array(await(await makeZip([{name:'x',data:'abc'}])).arrayBuffer());new DataView(b.buffer).setUint16(8,8,true);await assert.rejects(()=>readZip(new Blob([b])));});
+test('reject files above the supplied byte budget',async()=>assert.rejects(()=>readZip(new Blob([new Uint8Array(100)]),50)));
+test('reject a falsified central-directory local offset',async()=>{const b=new Uint8Array(await(await makeZip([{name:'x',data:'abc'}])).arrayBuffer());const v=new DataView(b.buffer);v.setUint32(34+42,999,true);await assert.rejects(()=>readZip(new Blob([b])));});
+test('reject multi-disk ZIP markers',async()=>{const b=new Uint8Array(await(await makeZip([{name:'x',data:'abc'}])).arrayBuffer());new DataView(b.buffer).setUint16(b.length-22+4,1,true);await assert.rejects(()=>readZip(new Blob([b])));});

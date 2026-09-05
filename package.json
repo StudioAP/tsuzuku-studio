@@ -1,0 +1,17 @@
+{
+  "name": "tsuzuku-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "iPhone-first, private seamless carousel editor. No runtime or build dependencies.",
+  "type": "module",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "start": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/serve.mjs --dir dist",
+    "test": "node --test tests/*.test.mjs",
+    "check": "node scripts/check.mjs"
+  },
+  "license": "MIT"
+}

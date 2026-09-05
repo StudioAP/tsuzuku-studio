@@ -1,0 +1,16 @@
+{
+  "name": "つづく — カルーセルスタジオ",
+  "short_name": "つづく",
+  "description": "写真がつながる、端末内だけのカルーセル作成アプリ。",
+  "lang": "ja",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f8f2",
+  "theme_color": "#f7f8f2",
+  "icons": [
+    { "src": "./public/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./public/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

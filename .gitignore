@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.DS_Store
+.env
+.env.*
+!.env.example
+exports/
+private-photos/
+*.tsuzuku
+test-results/
+__pycache__/
+.venv/

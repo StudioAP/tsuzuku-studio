@@ -1,0 +1,204 @@
+{
+  "browser": "chromium",
+  "version": "144.0.7559.96",
+  "base_url": "http://127.0.0.1:5173/dist/",
+  "results": [
+    {
+      "test": "Demo → deterministic five-slide layout; local draft saved",
+      "detail": null,
+      "result": "PASS"
+    },
+    {
+      "test": "Split controls and undo/redo",
+      "detail": null,
+      "result": "PASS"
+    },
+    {
+      "test": "Join, pair layout, split, reorder, and automatic relayout preserve photo order",
+      "detail": null,
+      "result": "PASS"
+    },
+    {
+      "test": "Ratio, zoom, output format, and draft survive reload",
+      "detail": null,
+      "result": "PASS"
+    },
+    {
+      "test": "Five actual PNG outputs decode at 1080×1440",
+      "detail": [
+        [
+          1080,
+          1440
+        ],
+        [
+          1080,
+          1440
+        ],
+        [
+          1080,
+          1440
+        ],
+        [
+          1080,
+          1440
+        ],
+        [
+          1080,
+          1440
+        ]
+      ],
+      "result": "PASS"
+    },
+    {
+      "test": "Share invocation retains user activation and ordered, files-only payload",
+      "detail": null,
+      "result": "PASS"
+    },
+    {
+      "test": "Native-share test doubles: cancellation, failure, and individual-file path",
+      "detail": null,
+      "result": "PASS"
+    },
+    {
+      "test": "Actual export ZIP opens in Python standard-library ZIP reader",
+      "detail": null,
+      "result": "PASS"
+    },
+    {
+      "test": "JPEG export after editing invalidates PNG cache and re-encodes",
+      "detail": null,
+      "result": "PASS"
+    },
+    {
+      "test": "Draft export → delete local draft → import .tsuzuku restores the project",
+      "detail": null,
+      "result": "PASS"
+    },
+    {
+      "test": "Unsupported uploads fail clearly without corrupting existing edits",
+      "detail": null,
+      "result": "PASS"
+    },
+    {
+      "test": "User filename is rendered as text, not executable markup",
+      "detail": null,
+      "result": "PASS"
+    },
+    {
+      "test": "Six two-page scenes match a unified strip within bounded rasterization tolerance",
+      "detail": {
+        "results": [
+          {
+            "ratio": "4:5",
+            "theme": "edge",
+            "fit": "contain",
+            "layout": "single",
+            "changed": 160,
+            "maxDiff": 1,
+            "seamMaxDiff": 0,
+            "totalBytes": 11664000
+          },
+          {
+            "ratio": "4:5",
+            "theme": "paper",
+            "fit": "cover",
+            "layout": "single",
+            "changed": 0,
+            "maxDiff": 0,
+            "seamMaxDiff": 0,
+            "totalBytes": 11664000
+          },
+          {
+            "ratio": "3:4",
+            "theme": "ink",
+            "fit": "cover",
+            "layout": "single",
+            "changed": 2631,
+            "maxDiff": 1,
+            "seamMaxDiff": 0,
+            "totalBytes": 12441600
+          },
+          {
+            "ratio": "1:1",
+            "theme": "edge",
+            "fit": "contain",
+            "layout": "single",
+            "changed": 44,
+            "maxDiff": 1,
+            "seamMaxDiff": 0,
+            "totalBytes": 9331200
+          },
+          {
+            "ratio": "4:5",
+            "theme": "paper",
+            "fit": "cover",
+            "layout": "overlap",
+            "changed": 1963,
+            "maxDiff": 3,
+            "seamMaxDiff": 0,
+            "totalBytes": 11664000
+          },
+          {
+            "ratio": "3:4",
+            "theme": "ink",
+            "fit": "contain",
+            "layout": "duo",
+            "changed": 0,
+            "maxDiff": 0,
+            "seamMaxDiff": 0,
+            "totalBytes": 12441600
+          }
+        ],
+        "dimensions": [
+          1080,
+          1350
+        ],
+        "canceled": true,
+        "pixel": [
+          255,
+          255,
+          255,
+          255
+        ]
+      },
+      "result": "PASS"
+    },
+    {
+      "test": "EXIF orientation 6 is normalized; source EXIF comment not copied",
+      "detail": {
+        "size": [
+          90,
+          160
+        ],
+        "metadataRetained": false
+      },
+      "result": "PASS"
+    },
+    {
+      "test": "No page exceptions, non-GET HTTP requests, or external HTTP requests in desktop scenarios",
+      "detail": null,
+      "result": "PASS"
+    },
+    {
+      "test": "390px mobile layout, preview shortcuts, swipe snap, and individual-download fallback",
+      "detail": null,
+      "result": "PASS"
+    },
+    {
+      "test": "Twenty-photo import and twenty-frame export; controls enforce output budget",
+      "detail": null,
+      "result": "PASS"
+    },
+    {
+      "test": "Unavailable IndexedDB shows a warning but still allows editing and export",
+      "detail": null,
+      "result": "PASS"
+    },
+    {
+      "test": "Cached app reloads, edits, and exports while offline",
+      "detail": null,
+      "result": "PASS"
+    }
+  ],
+  "native_iphone_tested": false
+}

@@ -1,0 +1,93 @@
+/** Pure project model. No DOM, network, or persistence dependencies. */
+export const VERSION = 1;
+export const MAX_SLIDES = 20;
+export const MAX_PHOTOS = 20;
+export const MAX_FILE_BYTES = 40 * 1024 * 1024;
+export const MAX_ARCHIVE_BYTES = 100 * 1024 * 1024;
+export const RATIOS = Object.freeze({ '4:5': { width: 1080, height: 1350 }, '3:4': { width: 1080, height: 1440 }, '1:1': { width: 1080, height: 1080 } });
+export const THEMES = Object.freeze({ edge: { name: '余白なし', background: '#ffffff', margin: 0 }, paper: { name: 'ペーパー', background: '#f6f2ea', margin: 48 }, ink: { name: 'ダーク', background: '#202624', margin: 48 } });
+export const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+export const uid = () => globalThis.crypto.randomUUID();
+export const neutralTransform = () => ({ zoom: 1, focusX: 0, focusY: 0 });
+export const slideCount = project => project.blocks.reduce((n, block) => n + block.span, 0);
+export function newProject() {
+  return { version: VERSION, id: uid(), title: '新しいカルーセル', ratio: '4:5', theme: 'edge', format: 'jpeg', blocks: [] };
+}
+export function makeBlock(photoId, span = 1) {
+  return { id: uid(), photoIds: [photoId], span, layout: 'single', fit: 'contain', transforms: { [photoId]: neutralTransform() } };
+}
+/** Deterministic, aspect-ratio-based suggestion. Never claims to understand image content. */
+export function recommendSpan(asset, ratio) {
+  const aspect = asset.width / asset.height;
+  if (aspect < 1.2) return 1;
+  const slideAspect = RATIOS[ratio].width / RATIOS[ratio].height;
+  return clamp(Math.round(aspect / slideAspect), 2, 6);
+}
+export function autoBlocks(assets, ratio, budget = MAX_SLIDES) {
+  if (assets.length > budget) throw new Error(`写真は${budget}枚以内にしてください。`);
+  const blocks = assets.map(asset => makeBlock(asset.id, recommendSpan(asset, ratio)));
+  let total = blocks.reduce((n, b) => n + b.span, 0);
+  // Compress the largest spans first; never omit a photo or change the order.
+  while (total > budget) {
+    let index = 0;
+    for (let i = 1; i < blocks.length; i++) if (blocks[i].span > blocks[index].span) index = i;
+    if (blocks[index].span <= 1) throw new Error('投稿枚数を調整できませんでした。');
+    blocks[index].span -= 1;
+    total -= 1;
+  }
+  return blocks;
+}
+export function moveBlock(project, index, direction) {
+  const target = index + direction;
+  if (index < 0 || target < 0 || target >= project.blocks.length) return project;
+  const blocks = [...project.blocks];
+  [blocks[index], blocks[target]] = [blocks[target], blocks[index]];
+  return { ...project, blocks };
+}
+export function joinNext(project, index) {
+  const a = project.blocks[index], b = project.blocks[index + 1];
+  if (!a || !b || a.photoIds.length !== 1 || b.photoIds.length !== 1) return project;
+  const joined = { ...a, photoIds: [...a.photoIds, ...b.photoIds], span: 2, layout: 'overlap', transforms: { ...a.transforms, ...b.transforms } };
+  return { ...project, blocks: [...project.blocks.slice(0, index), joined, ...project.blocks.slice(index + 2)] };
+}
+export function splitBlock(project, index) {
+  const block = project.blocks[index];
+  if (!block || block.photoIds.length !== 2) return project;
+  const blocks = block.photoIds.map(id => ({ ...makeBlock(id), fit: block.fit, transforms: { [id]: { ...block.transforms[id] } } }));
+  if (slideCount(project) - block.span + 2 > MAX_SLIDES) throw new Error('分けると20枚を超えます。ほかの写真の枚数を減らしてください。');
+  return { ...project, blocks: [...project.blocks.slice(0, index), ...blocks, ...project.blocks.slice(index + 1)] };
+}
+function finiteRange(value, min, max) { return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max; }
+function safeId(id) { return typeof id === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(id); }
+/** Reject untrusted backup data before it reaches drawing or HTML rendering. */
+export function validateProject(project, assets) {
+  const bad = detail => { throw new Error(`下書きの形式が正しくありません（${detail}）。`); };
+  if (!project || project.version !== VERSION) bad('バージョン');
+  if (!safeId(project.id) || typeof project.title !== 'string' || project.title.length > 100) bad('プロジェクト');
+  if (!Object.hasOwn(RATIOS, project.ratio) || !Object.hasOwn(THEMES, project.theme) || !['jpeg', 'png'].includes(project.format)) bad('設定');
+  if (!Array.isArray(assets) || assets.length > MAX_PHOTOS) bad('写真数');
+  const ids = new Set();
+  for (const asset of assets) {
+    if (!asset || !safeId(asset.id) || ids.has(asset.id)) bad('写真ID');
+    if (typeof asset.name !== 'string' || asset.name.length > 255) bad('写真名');
+    if (!Number.isInteger(asset.width) || !Number.isInteger(asset.height) || !finiteRange(asset.width, 1, 4096) || !finiteRange(asset.height, 1, 4096) || asset.width * asset.height > 8_010_000) bad('画像サイズ');
+    ids.add(asset.id);
+  }
+  if (!Array.isArray(project.blocks) || project.blocks.length > MAX_PHOTOS) bad('レイアウト数');
+  const used = new Set(), blockIds = new Set();
+  for (const block of project.blocks) {
+    if (!block || !safeId(block.id) || blockIds.has(block.id)) bad('レイアウトID');
+    blockIds.add(block.id);
+    if (!Number.isInteger(block.span) || !finiteRange(block.span, 1, 6)) bad('分割数');
+    if (!['single', 'duo', 'overlap'].includes(block.layout) || !['cover', 'contain'].includes(block.fit)) bad('配置');
+    if (!Array.isArray(block.photoIds) || block.photoIds.length !== (block.layout === 'single' ? 1 : 2)) bad('写真の組み合わせ');
+    for (const id of block.photoIds) {
+      if (!ids.has(id) || used.has(id)) bad('写真の参照');
+      used.add(id);
+      const transform = block.transforms?.[id];
+      if (!transform || !finiteRange(transform.zoom, 1, 2.5) || !finiteRange(transform.focusX, -1, 1) || !finiteRange(transform.focusY, -1, 1)) bad('切り取り位置');
+    }
+  }
+  if (used.size !== ids.size || slideCount(project) > MAX_SLIDES) bad('枚数・参照');
+  return true;
+}

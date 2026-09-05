@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="description" content="横長写真を、スワイプでつながる投稿に。写真は端末内だけで処理する、シンプルなカルーセル作成アプリ。">
+    <meta name="theme-color" content="#f7f8f2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+    <link rel="icon" type="image/svg+xml" href="./public/icon.svg">
+    <link rel="apple-touch-icon" href="./public/apple-touch-icon.png">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="stylesheet" href="./styles/main.css">
+    <title>つづく — 写真がつながるカルーセル</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">本文へ</a>
+    <div id="app"><div class="initial-loading" role="status">つづくを開いています。</div></div>
+    <dialog id="app-dialog" aria-label="つづくの操作画面"></dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <noscript><p>このアプリにはJavaScriptが必要です。Safariの設定でJavaScriptを有効にしてください。</p></noscript>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

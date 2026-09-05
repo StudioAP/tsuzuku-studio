@@ -1,0 +1,28 @@
+Verification date: 2026-09-05
+
+
+> tsuzuku-studio@1.0.0 check
+> node scripts/check.mjs
+
+Syntax checked 16 JavaScript modules.
+
+1..82
+# tests 82
+# suites 0
+# pass 82
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 134.206461
+
+
+> tsuzuku-studio@1.0.0 build
+> node scripts/build.mjs
+
+Built dist/ · cache version b9cf766ad81c2a76
+Static files only. No environment variables, API keys, or dependencies.
+
+Chromium 144.0.7559.96 / 19 browser scenarios passed.
+Native iPhone, HEIC decoding in Safari, Instagram posting and GitHub deployment NOT tested.
+Reproducible build in a path containing spaces and Japanese: PASS.

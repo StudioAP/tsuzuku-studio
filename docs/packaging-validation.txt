@@ -1,0 +1,562 @@
+つづく / Mac持ち帰り版の再梱包時検証
+確認日: 2026-09-05
+環境: Linux, Node.js v22.16.0, npm 10.9.2
+対象: このZIPに含む元のアプリコード（変更なし）
+
+以下は今回実際に再実行した構文確認・単体テスト・ビルドの出力です。
+元の19ブラウザシナリオ、MacのSafari、iPhone実機、GitHubでの公開を
+今回再検証したという意味ではありません。
+
+$ npm run check
+
+> tsuzuku-studio@1.0.0 check
+> node scripts/check.mjs
+
+Syntax checked 16 JavaScript modules.
+
+Exit code: 0
+
+
+$ npm test
+
+> tsuzuku-studio@1.0.0 test
+> node --test tests/*.test.mjs
+
+TAP version 13
+# Subtest: recognizes JPEG magic, independent of extension
+ok 1 - recognizes JPEG magic, independent of extension
+  ---
+  duration_ms: 6.886687
+  type: 'test'
+  ...
+# Subtest: recognizes PNG magic
+ok 2 - recognizes PNG magic
+  ---
+  duration_ms: 0.350708
+  type: 'test'
+  ...
+# Subtest: recognizes WebP
+ok 3 - recognizes WebP
+  ---
+  duration_ms: 0.292707
+  type: 'test'
+  ...
+# Subtest: recognizes HEIC brands
+ok 4 - recognizes HEIC brands
+  ---
+  duration_ms: 0.343859
+  type: 'test'
+  ...
+# Subtest: reject unsupported magic 
+ok 5 - reject unsupported magic 
+  ---
+  duration_ms: 0.246946
+  type: 'test'
+  ...
+# Subtest: reject unsupported magic <svg/>
+ok 6 - reject unsupported magic <svg/>
+  ---
+  duration_ms: 0.16049
+  type: 'test'
+  ...
+# Subtest: reject unsupported magic GIF89a
+ok 7 - reject unsupported magic GIF89a
+  ---
+  duration_ms: 0.166937
+  type: 'test'
+  ...
+# Subtest: reject unsupported magic 0000ftypavif0000
+ok 8 - reject unsupported magic 0000ftypavif0000
+  ---
+  duration_ms: 0.210709
+  type: 'test'
+  ...
+# Subtest: reject unsupported magic not an image
+ok 9 - reject unsupported magic not an image
+  ---
+  duration_ms: 0.455177
+  type: 'test'
+  ...
+# Subtest: contain keeps the entire photo, centers both axes
+ok 10 - contain keeps the entire photo, centers both axes
+  ---
+  duration_ms: 5.20088
+  type: 'test'
+  ...
+# Subtest: cover fills the frame and crops symmetrically
+ok 11 - cover fills the frame and crops symmetrically
+  ---
+  duration_ms: 0.292711
+  type: 'test'
+  ...
+# Subtest: focus endpoints move the crop to the image edges
+ok 12 - focus endpoints move the crop to the image edges
+  ---
+  duration_ms: 0.714041
+  type: 'test'
+  ...
+# Subtest: zoom multiplies one unified rectangle
+ok 13 - zoom multiplies one unified rectangle
+  ---
+  duration_ms: 0.27732
+  type: 'test'
+  ...
+# Subtest: touching rectangle edges do not count as intersection
+ok 14 - touching rectangle edges do not count as intersection
+  ---
+  duration_ms: 0.327913
+  type: 'test'
+  ...
+# Subtest: page seam does not split placements or add internal margins: edge
+ok 15 - page seam does not split placements or add internal margins: edge
+  ---
+  duration_ms: 9.082552
+  type: 'test'
+  ...
+# Subtest: page seam does not split placements or add internal margins: paper
+ok 16 - page seam does not split placements or add internal margins: paper
+  ---
+  duration_ms: 4.146924
+  type: 'test'
+  ...
+# Subtest: page seam does not split placements or add internal margins: ink
+ok 17 - page seam does not split placements or add internal margins: ink
+  ---
+  duration_ms: 0.219095
+  type: 'test'
+  ...
+# Subtest: different blocks are arranged in cumulative output coordinates
+ok 18 - different blocks are arranged in cumulative output coordinates
+  ---
+  duration_ms: 1.869817
+  type: 'test'
+  ...
+# Subtest: pair geometry is finite: duo, 1 slides
+ok 19 - pair geometry is finite: duo, 1 slides
+  ---
+  duration_ms: 1.773847
+  type: 'test'
+  ...
+# Subtest: pair geometry is finite: overlap, 1 slides
+ok 20 - pair geometry is finite: overlap, 1 slides
+  ---
+  duration_ms: 0.536189
+  type: 'test'
+  ...
+# Subtest: pair geometry is finite: duo, 2 slides
+ok 21 - pair geometry is finite: duo, 2 slides
+  ---
+  duration_ms: 0.357282
+  type: 'test'
+  ...
+# Subtest: pair geometry is finite: overlap, 2 slides
+ok 22 - pair geometry is finite: overlap, 2 slides
+  ---
+  duration_ms: 0.319469
+  type: 'test'
+  ...
+# Subtest: pair geometry is finite: duo, 6 slides
+ok 23 - pair geometry is finite: duo, 6 slides
+  ---
+  duration_ms: 0.160474
+  type: 'test'
+  ...
+# Subtest: pair geometry is finite: overlap, 6 slides
+ok 24 - pair geometry is finite: overlap, 6 slides
+  ---
+  duration_ms: 0.117222
+  type: 'test'
+  ...
+# Subtest: low resolution warning uses working pixels, not original-file metadata
+ok 25 - low resolution warning uses working pixels, not original-file metadata
+  ---
+  duration_ms: 0.447055
+  type: 'test'
+  ...
+# Subtest: missing assets fail clearly before drawing
+ok 26 - missing assets fail clearly before drawing
+  ---
+  duration_ms: 0.690905
+  type: 'test'
+  ...
+# Subtest: even an extremely thin photo retains at least one output pixel
+ok 27 - even an extremely thin photo retains at least one output pixel
+  ---
+  duration_ms: 0.18571
+  type: 'test'
+  ...
+# Subtest: default is a valid empty, portrait, JPEG project
+ok 28 - default is a valid empty, portrait, JPEG project
+  ---
+  duration_ms: 12.818717
+  type: 'test'
+  ...
+# Subtest: all output widths are 1080 with integer heights
+ok 29 - all output widths are 1080 with integer heights
+  ---
+  duration_ms: 1.665721
+  type: 'test'
+  ...
+# Subtest: span suggestion 2400×1600 4:5 → 2
+ok 30 - span suggestion 2400×1600 4:5 → 2
+  ---
+  duration_ms: 0.569004
+  type: 'test'
+  ...
+# Subtest: span suggestion 2400×1600 3:4 → 2
+ok 31 - span suggestion 2400×1600 3:4 → 2
+  ---
+  duration_ms: 0.263248
+  type: 'test'
+  ...
+# Subtest: span suggestion 1200×1800 4:5 → 1
+ok 32 - span suggestion 1200×1800 4:5 → 1
+  ---
+  duration_ms: 0.32796
+  type: 'test'
+  ...
+# Subtest: span suggestion 1000×1000 1:1 → 1
+ok 33 - span suggestion 1000×1000 1:1 → 1
+  ---
+  duration_ms: 0.322034
+  type: 'test'
+  ...
+# Subtest: span suggestion 4096×300 4:5 → 6
+ok 34 - span suggestion 4096×300 4:5 → 6
+  ---
+  duration_ms: 0.272904
+  type: 'test'
+  ...
+# Subtest: span suggestion 3600×1200 1:1 → 3
+ok 35 - span suggestion 3600×1200 1:1 → 3
+  ---
+  duration_ms: 0.600196
+  type: 'test'
+  ...
+# Subtest: 20 landscape photos fit into 20 slides without dropping/reordering any
+ok 36 - 20 landscape photos fit into 20 slides without dropping/reordering any
+  ---
+  duration_ms: 2.47793
+  type: 'test'
+  ...
+# Subtest: budget pressure reduces the largest spans first
+ok 37 - budget pressure reduces the largest spans first
+  ---
+  duration_ms: 1.003626
+  type: 'test'
+  ...
+# Subtest: auto layout rejects more photos than its budget
+ok 38 - auto layout rejects more photos than its budget
+  ---
+  duration_ms: 0.808117
+  type: 'test'
+  ...
+# Subtest: move is immutable and boundaries are no-ops
+ok 39 - move is immutable and boundaries are no-ops
+  ---
+  duration_ms: 1.049184
+  type: 'test'
+  ...
+# Subtest: join then split preserves photo order and valid references
+ok 40 - join then split preserves photo order and valid references
+  ---
+  duration_ms: 0.686626
+  type: 'test'
+  ...
+# Subtest: joining the last block or a pair is a no-op
+ok 41 - joining the last block or a pair is a no-op
+  ---
+  duration_ms: 0.206444
+  type: 'test'
+  ...
+# Subtest: splitting refuses to exceed slide budget
+ok 42 - splitting refuses to exceed slide budget
+  ---
+  duration_ms: 0.560937
+  type: 'test'
+  ...
+# Subtest: untrusted project rejected: unknown version
+ok 43 - untrusted project rejected: unknown version
+  ---
+  duration_ms: 0.2583
+  type: 'test'
+  ...
+# Subtest: untrusted project rejected: bad id
+ok 44 - untrusted project rejected: bad id
+  ---
+  duration_ms: 0.292979
+  type: 'test'
+  ...
+# Subtest: untrusted project rejected: oversized title
+ok 45 - untrusted project rejected: oversized title
+  ---
+  duration_ms: 0.231594
+  type: 'test'
+  ...
+# Subtest: untrusted project rejected: unknown ratio
+ok 46 - untrusted project rejected: unknown ratio
+  ---
+  duration_ms: 0.201846
+  type: 'test'
+  ...
+# Subtest: untrusted project rejected: unknown theme
+ok 47 - untrusted project rejected: unknown theme
+  ---
+  duration_ms: 0.193969
+  type: 'test'
+  ...
+# Subtest: untrusted project rejected: unknown format
+ok 48 - untrusted project rejected: unknown format
+  ---
+  duration_ms: 0.163371
+  type: 'test'
+  ...
+# Subtest: untrusted project rejected: fractional span
+ok 49 - untrusted project rejected: fractional span
+  ---
+  duration_ms: 0.208912
+  type: 'test'
+  ...
+# Subtest: untrusted project rejected: too many splits
+ok 50 - untrusted project rejected: too many splits
+  ---
+  duration_ms: 1.044029
+  type: 'test'
+  ...
+# Subtest: untrusted project rejected: missing photo
+ok 51 - untrusted project rejected: missing photo
+  ---
+  duration_ms: 0.438075
+  type: 'test'
+  ...
+# Subtest: untrusted project rejected: duplicate photo
+ok 52 - untrusted project rejected: duplicate photo
+  ---
+  duration_ms: 0.241609
+  type: 'test'
+  ...
+# Subtest: untrusted project rejected: wrong pair
+ok 53 - untrusted project rejected: wrong pair
+  ---
+  duration_ms: 0.323581
+  type: 'test'
+  ...
+# Subtest: untrusted project rejected: invalid fit
+ok 54 - untrusted project rejected: invalid fit
+  ---
+  duration_ms: 0.449684
+  type: 'test'
+  ...
+# Subtest: untrusted project rejected: unsafe focus
+ok 55 - untrusted project rejected: unsafe focus
+  ---
+  duration_ms: 0.236495
+  type: 'test'
+  ...
+# Subtest: untrusted project rejected: excess zoom
+ok 56 - untrusted project rejected: excess zoom
+  ---
+  duration_ms: 0.184717
+  type: 'test'
+  ...
+# Subtest: untrusted project rejected: duplicate block id
+ok 57 - untrusted project rejected: duplicate block id
+  ---
+  duration_ms: 0.247795
+  type: 'test'
+  ...
+# Subtest: asset dimensions must be limited integers
+ok 58 - asset dimensions must be limited integers
+  ---
+  duration_ms: 0.210141
+  type: 'test'
+  ...
+# Subtest: all admitted photo counts and ratios obey the invariants
+ok 59 - all admitted photo counts and ratios obey the invariants
+  ---
+  duration_ms: 21.808963
+  type: 'test'
+  ...
+# Subtest: application modules contain no HTTP upload, beacon, websocket, or remote import code
+ok 60 - application modules contain no HTTP upload, beacon, websocket, or remote import code
+  ---
+  duration_ms: 24.563071
+  type: 'test'
+  ...
+# Subtest: all initial script and stylesheet assets are local
+ok 61 - all initial script and stylesheet assets are local
+  ---
+  duration_ms: 2.354917
+  type: 'test'
+  ...
+# Subtest: runtime and build do not require third-party npm packages
+ok 62 - runtime and build do not require third-party npm packages
+  ---
+  duration_ms: 15.211715
+  type: 'test'
+  ...
+# Subtest: private data and generated exports are excluded from Git by default
+ok 63 - private data and generated exports are excluded from Git by default
+  ---
+  duration_ms: 5.434969
+  type: 'test'
+  ...
+# Subtest: service worker limits cached resources and ignores non-GET requests
+ok 64 - service worker limits cached resources and ignores non-GET requests
+  ---
+  duration_ms: 5.71572
+  type: 'test'
+  ...
+# Subtest: CRC32 matches the public standard check vector
+ok 65 - CRC32 matches the public standard check vector
+  ---
+  duration_ms: 2.809543
+  type: 'test'
+  ...
+# Subtest: ZIP STORE roundtrip supports Japanese and binary files
+ok 66 - ZIP STORE roundtrip supports Japanese and binary files
+  ---
+  duration_ms: 8.686024
+  type: 'test'
+  ...
+# Subtest: empty ZIP is valid
+ok 67 - empty ZIP is valid
+  ---
+  duration_ms: 0.320818
+  type: 'test'
+  ...
+# Subtest: reject unsafe path "../x"
+ok 68 - reject unsafe path "../x"
+  ---
+  duration_ms: 0.821597
+  type: 'test'
+  ...
+# Subtest: reject unsafe path "/x"
+ok 69 - reject unsafe path "/x"
+  ---
+  duration_ms: 0.221542
+  type: 'test'
+  ...
+# Subtest: reject unsafe path "a/../b"
+ok 70 - reject unsafe path "a/../b"
+  ---
+  duration_ms: 0.220321
+  type: 'test'
+  ...
+# Subtest: reject unsafe path "a\\\\b"
+ok 71 - reject unsafe path "a\\\\b"
+  ---
+  duration_ms: 0.206263
+  type: 'test'
+  ...
+# Subtest: reject unsafe path "a//b"
+ok 72 - reject unsafe path "a//b"
+  ---
+  duration_ms: 0.408223
+  type: 'test'
+  ...
+# Subtest: reject unsafe path "a/./b"
+ok 73 - reject unsafe path "a/./b"
+  ---
+  duration_ms: 1.99308
+  type: 'test'
+  ...
+# Subtest: reject unsafe path "bad\\u0000name"
+ok 74 - reject unsafe path "bad\\u0000name"
+  ---
+  duration_ms: 0.614003
+  type: 'test'
+  ...
+# Subtest: reject duplicate names
+ok 75 - reject duplicate names
+  ---
+  duration_ms: 0.456705
+  type: 'test'
+  ...
+# Subtest: reject over 64 entries
+ok 76 - reject over 64 entries
+  ---
+  duration_ms: 0.28766
+  type: 'test'
+  ...
+# Subtest: reject a corrupt image payload
+ok 77 - reject a corrupt image payload
+  ---
+  duration_ms: 3.997856
+  type: 'test'
+  ...
+# Subtest: reject truncation and trailing junk
+ok 78 - reject truncation and trailing junk
+  ---
+  duration_ms: 0.921406
+  type: 'test'
+  ...
+# Subtest: reject compressed input rather than inflating arbitrary data
+ok 79 - reject compressed input rather than inflating arbitrary data
+  ---
+  duration_ms: 1.120508
+  type: 'test'
+  ...
+# Subtest: reject files above the supplied byte budget
+ok 80 - reject files above the supplied byte budget
+  ---
+  duration_ms: 1.878521
+  type: 'test'
+  ...
+# Subtest: reject a falsified central-directory local offset
+ok 81 - reject a falsified central-directory local offset
+  ---
+  duration_ms: 0.33467
+  type: 'test'
+  ...
+# Subtest: reject multi-disk ZIP markers
+ok 82 - reject multi-disk ZIP markers
+  ---
+  duration_ms: 0.373162
+  type: 'test'
+  ...
+1..82
+# tests 82
+# suites 0
+# pass 82
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 631.96438
+
+Exit code: 0
+
+
+$ npm run build
+
+> tsuzuku-studio@1.0.0 build
+> node scripts/build.mjs
+
+Built dist/ · cache version b9cf766ad81c2a76
+Static files only. No environment variables, API keys, or dependencies.
+
+Exit code: 0
+
+
+--- Additional packaging checks (not app UI scenarios) ---
+PASS HTTP serve .: / -> 200, 1638 bytes
+PASS HTTP serve .: /src/main.js -> 200, 645 bytes
+PASS HTTP serve .: /styles/main.css -> 200, 31744 bytes
+PASS HTTP serve .: /dist/ -> 200, 1638 bytes
+PASS HTTP serve .: /dist/src/main.js -> 200, 645 bytes
+PASS HTTP serve dist: / -> 200, 1638 bytes
+PASS HTTP serve dist: /src/main.js -> 200, 645 bytes
+PASS HTTP serve dist: /styles/main.css -> 200, 31744 bytes
+PASS HTTP serve dist: /manifest.webmanifest -> 200, 563 bytes
+PASS HTTP serve dist: /sw.js -> 200, 1578 bytes
+PASS guide links/assets: 80 references checked; no remote references
+
+NOTE: browser navigation to both file:// and localhost was blocked by container administrator policy (ERR_BLOCKED_BY_ADMINISTRATOR).
+Guide layout was checked with page.set_content(), using the same text/styles and in-memory embedded copies of local images; CSP was removed only in the temporary visual fixture. Shipped HTML is unchanged.
+This does not verify Mac Finder double-click behavior or browser URL navigation. Local HTTP transport was separately checked using Python urllib.
+PASS in-memory guide visual fixture: desktop 1440x1050, no page overflow, 17 sections, embedded images loaded, no JS errors
+PASS in-memory guide visual fixture: mobile 390x844, no page overflow, 17 sections, embedded images loaded, no JS errors
+
+PASS preservation: all 79 original archive files unchanged byte-for-byte; all distinct supplied attachments included.
+Package inventory: 91 files including inventory/checksums; no .git history, node_modules, tools, or user photos added.
