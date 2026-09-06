@@ -1,4 +1,4 @@
-import { MAX_FILE_BYTES, uid, effectiveAssetSize, normalizedPreprocess, neutralPreprocess } from './model.js';
+import { MAX_FILE_BYTES, uid, effectiveAssetSize, normalizedPreprocess, neutralPreprocess, rotationCoverScale } from './model.js';
 export function sniffImage(bytes) {
   if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
   if ([137,80,78,71,13,10,26,10].every((b, i) => bytes[i] === b)) return 'image/png';
@@ -77,9 +77,11 @@ export function drawPreprocessed(canvas, image, asset, maxSide = Infinity) {
   ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   ctx.scale(scale, scale);
-  ctx.translate(-edit.crop.left * size.rotatedWidth, -edit.crop.top * size.rotatedHeight);
-  ctx.translate(size.rotatedWidth / 2, size.rotatedHeight / 2);
+  ctx.translate(-edit.crop.left * size.frameWidth, -edit.crop.top * size.frameHeight);
+  ctx.translate(size.frameWidth / 2, size.frameHeight / 2);
   ctx.rotate(edit.rotation * Math.PI / 180);
+  const coverScale = rotationCoverScale(asset.width, asset.height, edit.rotation);
+  ctx.scale(coverScale, coverScale);
   ctx.drawImage(image, -asset.width / 2, -asset.height / 2, asset.width, asset.height);
   return canvas;
 }

@@ -29,15 +29,18 @@ export function normalizedPreprocess(value = {}) {
 }
 export function effectiveAssetSize(asset, preprocess = asset.preprocess) {
   const edit = normalizedPreprocess(preprocess);
-  const angle = edit.rotation * Math.PI / 180;
-  const rotatedWidth = Math.abs(asset.width * Math.cos(angle)) + Math.abs(asset.height * Math.sin(angle));
-  const rotatedHeight = Math.abs(asset.width * Math.sin(angle)) + Math.abs(asset.height * Math.cos(angle));
   return {
-    width: Math.max(1, Math.round(rotatedWidth * (1 - edit.crop.left - edit.crop.right))),
-    height: Math.max(1, Math.round(rotatedHeight * (1 - edit.crop.top - edit.crop.bottom))),
-    rotatedWidth,
-    rotatedHeight,
+    width: Math.max(1, Math.round(asset.width * (1 - edit.crop.left - edit.crop.right))),
+    height: Math.max(1, Math.round(asset.height * (1 - edit.crop.top - edit.crop.bottom))),
+    frameWidth: asset.width,
+    frameHeight: asset.height,
   };
+}
+/** Minimum scale that keeps every corner of the original-size frame covered after rotation. */
+export function rotationCoverScale(width, height, degrees) {
+  const angle = Math.abs(degrees) * Math.PI / 180;
+  const cosine = Math.abs(Math.cos(angle)), sine = Math.abs(Math.sin(angle));
+  return Math.max(cosine + (height / width) * sine, cosine + (width / height) * sine);
 }
 export const slideCount = project => project.blocks.reduce((n, block) => n + block.span, 0);
 export function newProject() {

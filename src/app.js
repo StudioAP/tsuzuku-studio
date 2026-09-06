@@ -128,8 +128,8 @@ export class Studio {
   }
   preprocessDialogHTML(asset) {
     const edit = this.preprocessDraft;
-    const rows = [['rotation','傾き',-180,180,edit.rotation,'°'],['left','左を切る',0,95,Math.round(edit.crop.left*100),'%'],['right','右を切る',0,95,Math.round(edit.crop.right*100),'%'],['top','上を切る',0,95,Math.round(edit.crop.top*100),'%'],['bottom','下を切る',0,95,Math.round(edit.crop.bottom*100),'%']];
-    return `<div class="dialog-header"><span class="eyebrow">PREPARE THE PHOTO</span><button class="icon-button" data-action="close-dialog" aria-label="写真の前処理を閉じる">${icon('close')}</button></div><h2 class="dialog-title">元写真を整える</h2><p class="dialog-lead">配置や組み合わせの前に、傾きと不要な周囲を整えます。元ファイルは変更しません。</p><div class="preprocess-layout"><div class="preprocess-preview"><canvas id="preprocess-canvas" aria-label="前処理後の写真プレビュー"></canvas><span>前処理後の形</span></div><div class="preprocess-controls"><div class="preprocess-presets"><button class="button secondary" data-action="preprocess-preset" data-value="reset">切り取りなし</button><button class="button secondary square-preset" data-action="preprocess-preset" data-value="square">正方形にする</button></div>${rows.map(([key,label,min,max,value,suffix])=>`<label class="range-label" for="preprocess-${key}"><span>${label}</span><output id="preprocess-value-${key}">${value}${suffix}</output></label><input id="preprocess-${key}" data-preprocess="${key}" type="range" min="${min}" max="${max}" step="${key==='rotation'?'.5':'1'}" value="${value}">`).join('')}<p class="control-note">正方形にしたあとも、上下左右を動かして残す位置を選べます。</p></div></div><div class="preprocess-footer"><button class="text-button" data-action="preprocess-reset-all">傾きと切り取りをすべて戻す</button><div><button class="button secondary" data-action="close-dialog">キャンセル</button><button class="button primary" data-action="preprocess-apply">この形を使う ${icon('arrow')}</button></div></div>`;
+    const rows = [['left','左を切る',0,95,Math.round(edit.crop.left*100),'%'],['right','右を切る',0,95,Math.round(edit.crop.right*100),'%'],['top','上を切る',0,95,Math.round(edit.crop.top*100),'%'],['bottom','下を切る',0,95,Math.round(edit.crop.bottom*100),'%']];
+    return `<div class="dialog-header"><span class="eyebrow">PREPARE THE PHOTO</span><button class="icon-button" data-action="close-dialog" aria-label="写真の前処理を閉じる">${icon('close')}</button></div><h2 class="dialog-title">元写真を整える</h2><p class="dialog-lead">元の縦横比を保ったまま傾きを直します。回転で白場が出ないよう、写真は必要な分だけ自動で拡大されます。</p><div class="preprocess-layout"><div class="preprocess-preview"><canvas id="preprocess-canvas" aria-label="前処理後の写真プレビュー"></canvas><span>白場を残さない仕上がり</span></div><div class="preprocess-controls"><div class="preprocess-presets"><button class="button secondary" data-action="preprocess-preset" data-value="reset">切り取りなし</button><button class="button secondary square-preset" data-action="preprocess-preset" data-value="square">正方形にする</button></div><label class="range-label" for="preprocess-rotation"><span>傾き</span><output id="preprocess-value-rotation">${edit.rotation.toFixed(1)}°</output></label><div class="rotation-control"><button class="button secondary" data-action="rotation-step" data-value="-0.1" aria-label="左へ0.1度回転">−0.1°</button><input id="preprocess-rotation" data-preprocess="rotation" type="range" min="-180" max="180" step="0.1" value="${edit.rotation}"><button class="button secondary" data-action="rotation-step" data-value="0.1" aria-label="右へ0.1度回転">＋0.1°</button></div><p class="rotation-note">角度に合わせて自動拡大し、四隅まで写真で埋めます。</p>${rows.map(([key,label,min,max,value,suffix])=>`<label class="range-label" for="preprocess-${key}"><span>${label}</span><output id="preprocess-value-${key}">${value}${suffix}</output></label><input id="preprocess-${key}" data-preprocess="${key}" type="range" min="${min}" max="${max}" step="1" value="${value}">`).join('')}<p class="control-note">正方形にしたあとも、上下左右を動かして残す位置を選べます。</p></div></div><div class="preprocess-footer"><button class="text-button" data-action="preprocess-reset-all">傾きと切り取りをすべて戻す</button><div><button class="button secondary" data-action="close-dialog">キャンセル</button><button class="button primary" data-action="preprocess-apply">この形を使う ${icon('arrow')}</button></div></div>`;
   }
   async openPreprocess(id) {
     const asset = this.asset(id); if (!asset) return;
@@ -146,8 +146,8 @@ export class Studio {
   squarePreprocess(asset, rotation = normalizedPreprocess(asset.preprocess).rotation) {
     const size = effectiveAssetSize(asset, { ...neutralPreprocess(), rotation });
     const crop = { left: 0, right: 0, top: 0, bottom: 0 };
-    if (size.rotatedWidth > size.rotatedHeight) crop.left = crop.right = (1 - size.rotatedHeight / size.rotatedWidth) / 2;
-    else crop.top = crop.bottom = (1 - size.rotatedWidth / size.rotatedHeight) / 2;
+    if (size.frameWidth > size.frameHeight) crop.left = crop.right = (1 - size.frameHeight / size.frameWidth) / 2;
+    else crop.top = crop.bottom = (1 - size.frameWidth / size.frameHeight) / 2;
     return normalizedPreprocess({ rotation, crop });
   }
   async applyAssetPreprocess(id, preprocess, squareSingle = false) {
@@ -387,6 +387,15 @@ export class Studio {
         this.preprocessDraft=button.dataset.value==='square' ? this.squarePreprocess(asset,this.preprocessDraft.rotation) : { ...this.preprocessDraft,crop:neutralPreprocess().crop };
         this.dialog.innerHTML=this.preprocessDialogHTML(asset); this.renderPreprocessPreview(); return;
       }
+      if (action === 'rotation-step') {
+        if(!this.preprocessDraft) return;
+        const rotation=Math.round((this.preprocessDraft.rotation+Number(button.dataset.value))*10)/10;
+        this.preprocessDraft=normalizedPreprocess({ ...this.preprocessDraft,rotation });
+        const slider=document.querySelector('#preprocess-rotation'), output=document.querySelector('#preprocess-value-rotation');
+        if(slider) slider.value=String(this.preprocessDraft.rotation);
+        if(output) output.textContent=`${this.preprocessDraft.rotation.toFixed(1)}°`;
+        this.renderPreprocessPreview(); return;
+      }
       if (action === 'preprocess-reset-all') {
         const asset=this.asset(this.preprocessAssetId); if(!asset) return;
         this.preprocessDraft=neutralPreprocess(); this.dialog.innerHTML=this.preprocessDialogHTML(asset); this.renderPreprocessPreview(); return;
@@ -459,7 +468,7 @@ export class Studio {
       const value=Number(event.target.value), next=structuredClone(this.preprocessDraft);
       if(preprocessKey==='rotation') next.rotation=value; else next.crop[preprocessKey]=value/100;
       this.preprocessDraft=normalizedPreprocess(next);
-      const output=document.querySelector(`#preprocess-value-${preprocessKey}`); if(output) output.textContent=`${value}${preprocessKey==='rotation'?'°':'%'}`;
+      const output=document.querySelector(`#preprocess-value-${preprocessKey}`); if(output) output.textContent=preprocessKey==='rotation' ? `${value.toFixed(1)}°` : `${value}%`;
       this.renderPreprocessPreview(); return;
     }
     const key=event.target.dataset.transform;
