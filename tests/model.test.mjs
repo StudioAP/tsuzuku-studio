@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { newProject, makeBlock, recommendSpan, autoBlocks, slideCount, moveBlock, joinNext, splitBlock, validateProject, RATIOS, MAX_SLIDES, effectiveAssetSize, neutralPreprocess, rotationCoverScale } from '../src/model.js';
+import { newProject, makeBlock, recommendSpan, autoBlocks, slideCount, moveBlock, joinNext, splitBlock, validateProject, RATIOS, MAX_SLIDES, effectiveAssetSize, neutralPreprocess, rotationCoverScale, preprocessPlacement, normalizedPreprocess } from '../src/model.js';
 const asset = (id, width=2400, height=1600) => ({id,name:`${id}.jpg`,width,height});
 function sample() { const assets=[asset('a'),asset('b',1200,1800),asset('c')]; return {assets,project:{...newProject(),blocks:autoBlocks(assets,'4:5')}}; }
 
@@ -20,6 +20,8 @@ for(const [name,mutate] of [
 test('asset dimensions must be limited integers',()=>{const {project,assets}=sample();assets[0].width=50000;assert.throws(()=>validateProject(project,assets));});
 test('rotation keeps the original frame and crop dimensions without changing source dimensions',()=>{const a=asset('a',2400,1600);a.preprocess={...neutralPreprocess(),rotation:90,crop:{left:.1,right:.1,top:0,bottom:0}};assert.deepEqual(effectiveAssetSize(a),{width:1920,height:1600,frameWidth:2400,frameHeight:1600});assert.deepEqual([a.width,a.height],[2400,1600]);});
 test('rotation cover scale is minimal at zero and grows enough to cover a landscape frame',()=>{assert.equal(rotationCoverScale(2400,1600,0),1);assert.ok(Math.abs(rotationCoverScale(2400,1600,3)-1.077133)<.000001);assert.ok(rotationCoverScale(2400,1600,45)>1.76);});
+test('preprocess placement maps drag focus only inside white-space-free bounds',()=>{const a=asset('a',2400,1600),base={rotation:7,zoom:1.6,crop:{left:.1,right:0,top:0,bottom:.08}};const left=preprocessPlacement(a,{...base,focusX:-1,focusY:-1}),right=preprocessPlacement(a,{...base,focusX:1,focusY:1}),near=(a,b)=>Math.abs(a-b)<1e-9;assert.ok(near(left.panX,left.xMin));assert.ok(near(left.panY,left.yMin));assert.ok(near(right.panX,right.xMax));assert.ok(near(right.panY,right.yMax));assert.ok(right.xMax>left.xMin);assert.ok(right.yMax>left.yMin);});
+test('older preprocessing values gain neutral zoom and position defaults',()=>assert.deepEqual(normalizedPreprocess({rotation:2,crop:{left:0,right:0,top:0,bottom:0}}),{rotation:2,zoom:1,focusX:0,focusY:0,crop:{left:0,right:0,top:0,bottom:0}}));
 test('square preprocessing changes a landscape recommendation from two pages to one',()=>{const a=asset('a',2400,1600);a.preprocess={rotation:0,crop:{left:1/6,right:1/6,top:0,bottom:0}};assert.deepEqual(effectiveAssetSize(a).width,effectiveAssetSize(a).height);assert.equal(recommendSpan(a,'4:5'),1);});
 test('untrusted preprocessing crop is rejected',()=>{const {project,assets}=sample();assets[0].preprocess={rotation:0,crop:{left:.6,right:.4,top:0,bottom:0}};assert.throws(()=>validateProject(project,assets),/前処理/);});
 test('all admitted photo counts and ratios obey the invariants',()=>{for(let n=0;n<=20;n++)for(const ratio of Object.keys(RATIOS)){const assets=Array.from({length:n},(_,i)=>asset(`p${i}`,900+i*137,600+(i%3)*470));const project={...newProject(),ratio,blocks:autoBlocks(assets,ratio)};assert.ok(slideCount(project)<=MAX_SLIDES);assert.ok(validateProject(project,assets));}});

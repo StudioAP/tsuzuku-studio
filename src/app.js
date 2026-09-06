@@ -1,4 +1,4 @@
-import { newProject, autoBlocks, makeBlock, recommendSpan, moveBlock, joinNext, splitBlock, slideCount, RATIOS, THEMES, MAX_PHOTOS, MAX_SLIDES, validateProject, neutralTransform, neutralPreprocess, normalizedPreprocess, effectiveAssetSize } from './model.js';
+import { newProject, autoBlocks, makeBlock, recommendSpan, moveBlock, joinNext, splitBlock, slideCount, RATIOS, THEMES, MAX_PHOTOS, MAX_SLIDES, validateProject, neutralTransform, neutralPreprocess, normalizedPreprocess, effectiveAssetSize, preprocessPlacement, clamp } from './model.js';
 import { buildScene, lowResolutionIds } from './layout.js';
 import { importPhoto, ImagePool, loadImage, drawPreprocessed, refreshThumbnail } from './images.js';
 import { drawPage, exportPages, yieldToUI } from './renderer.js';
@@ -25,9 +25,14 @@ export class Studio {
     this.saveChain = Promise.resolve(); this.previewController = null;
     this.outputFiles = []; this.outputUrls = []; this.sharing = false;
     this.preprocessAssetId = null; this.preprocessDraft = null; this.preprocessImage = null;
+    this.preprocessPointers = new Map(); this.preprocessGesture = null;
     document.addEventListener('click', event => this.onClick(event));
     document.addEventListener('input', event => this.onInput(event));
     document.addEventListener('change', event => this.onChange(event));
+    document.addEventListener('pointerdown', event => this.onPreprocessPointerDown(event));
+    document.addEventListener('pointermove', event => this.onPreprocessPointerMove(event));
+    document.addEventListener('pointerup', event => this.onPreprocessPointerUp(event));
+    document.addEventListener('pointercancel', event => this.onPreprocessPointerUp(event));
     this.dialog.addEventListener('cancel', () => { this.exportController?.abort(); this.closePreprocess(); });
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden' && this.saveTimer) { clearTimeout(this.saveTimer); this.queueSave(); }
@@ -120,16 +125,18 @@ export class Studio {
     const size = asset ? effectiveAssetSize(asset, edit) : null;
     const square = size && Math.abs(size.width / size.height - 1) < .015;
     const cropped = Object.values(edit.crop).some(value => value > .001);
-    return [square ? '正方形' : cropped ? 'トリミング済み' : '', edit.rotation ? `傾き ${edit.rotation}°` : ''].filter(Boolean).join('・') || '未調整';
+    const positioned = edit.zoom > 1.001 || Math.abs(edit.focusX) > .001 || Math.abs(edit.focusY) > .001;
+    return [square ? '正方形' : cropped ? 'トリミング済み' : '', edit.rotation ? `傾き ${edit.rotation}°` : '', positioned ? '位置調整済み' : ''].filter(Boolean).join('・') || '未調整';
   }
   closePreprocess() {
     if (this.preprocessImage) this.preprocessImage.src = '';
     this.preprocessImage = null; this.preprocessAssetId = null; this.preprocessDraft = null;
+    this.preprocessPointers.clear(); this.preprocessGesture = null;
   }
   preprocessDialogHTML(asset) {
     const edit = this.preprocessDraft;
     const rows = [['left','左を切る',0,95,Math.round(edit.crop.left*100),'%'],['right','右を切る',0,95,Math.round(edit.crop.right*100),'%'],['top','上を切る',0,95,Math.round(edit.crop.top*100),'%'],['bottom','下を切る',0,95,Math.round(edit.crop.bottom*100),'%']];
-    return `<div class="dialog-header"><span class="eyebrow">PREPARE THE PHOTO</span><button class="icon-button" data-action="close-dialog" aria-label="写真の前処理を閉じる">${icon('close')}</button></div><h2 class="dialog-title">元写真を整える</h2><p class="dialog-lead">元の縦横比を保ったまま傾きを直します。回転で白場が出ないよう、写真は必要な分だけ自動で拡大されます。</p><div class="preprocess-layout"><div class="preprocess-preview"><canvas id="preprocess-canvas" aria-label="前処理後の写真プレビュー"></canvas><span>白場を残さない仕上がり</span></div><div class="preprocess-controls"><div class="preprocess-presets"><button class="button secondary" data-action="preprocess-preset" data-value="reset">切り取りなし</button><button class="button secondary square-preset" data-action="preprocess-preset" data-value="square">正方形にする</button></div><label class="range-label" for="preprocess-rotation"><span>傾き</span><output id="preprocess-value-rotation">${edit.rotation.toFixed(1)}°</output></label><div class="rotation-control"><button class="button secondary" data-action="rotation-step" data-value="-0.1" aria-label="左へ0.1度回転">−0.1°</button><input id="preprocess-rotation" data-preprocess="rotation" type="range" min="-180" max="180" step="0.1" value="${edit.rotation}"><button class="button secondary" data-action="rotation-step" data-value="0.1" aria-label="右へ0.1度回転">＋0.1°</button></div><p class="rotation-note">角度に合わせて自動拡大し、四隅まで写真で埋めます。</p>${rows.map(([key,label,min,max,value,suffix])=>`<label class="range-label" for="preprocess-${key}"><span>${label}</span><output id="preprocess-value-${key}">${value}${suffix}</output></label><input id="preprocess-${key}" data-preprocess="${key}" type="range" min="${min}" max="${max}" step="1" value="${value}">`).join('')}<p class="control-note">正方形にしたあとも、上下左右を動かして残す位置を選べます。</p></div></div><div class="preprocess-footer"><button class="text-button" data-action="preprocess-reset-all">傾きと切り取りをすべて戻す</button><div><button class="button secondary" data-action="close-dialog">キャンセル</button><button class="button primary" data-action="preprocess-apply">この形を使う ${icon('arrow')}</button></div></div>`;
+    return `<div class="dialog-header"><span class="eyebrow">PREPARE THE PHOTO</span><button class="icon-button" data-action="close-dialog" aria-label="写真の前処理を閉じる">${icon('close')}</button></div><h2 class="dialog-title">元写真を整える</h2><p class="dialog-lead">写真を1本指で動かし、2本指で広げて拡大できます。回転や移動をしても白場が出ない範囲に自動で収めます。</p><div class="preprocess-layout"><div class="preprocess-preview"><div class="gesture-frame"><canvas id="preprocess-canvas" aria-label="前処理後の写真プレビュー。ドラッグで移動、ピンチで拡大"></canvas><span class="gesture-hint">1本指で移動 ・ 2本指で拡大</span></div><span>白場を残さない仕上がり</span></div><div class="preprocess-controls"><div class="preprocess-presets"><button class="button secondary" data-action="preprocess-preset" data-value="reset">切り取りなし</button><button class="button secondary square-preset" data-action="preprocess-preset" data-value="square">正方形にする</button></div><label class="range-label" for="preprocess-rotation"><span>傾き</span><output id="preprocess-value-rotation">${edit.rotation.toFixed(1)}°</output></label><div class="rotation-control"><button class="button secondary" data-action="rotation-step" data-value="-0.1" aria-label="左へ0.1度回転">−0.1°</button><input id="preprocess-rotation" data-preprocess="rotation" type="range" min="-180" max="180" step="0.1" value="${edit.rotation}"><button class="button secondary" data-action="rotation-step" data-value="0.1" aria-label="右へ0.1度回転">＋0.1°</button></div><p class="rotation-note">角度に合わせて自動拡大し、四隅まで写真で埋めます。</p><label class="range-label" for="preprocess-zoom"><span>拡大</span><output id="preprocess-value-zoom">${Math.round(edit.zoom*100)}%</output></label><input id="preprocess-zoom" data-preprocess="zoom" type="range" min="100" max="300" step="1" value="${Math.round(edit.zoom*100)}"><button class="text-button recenter-button" data-action="preprocess-recenter">写真を中央に戻す</button>${rows.map(([key,label,min,max,value,suffix])=>`<label class="range-label" for="preprocess-${key}"><span>${label}</span><output id="preprocess-value-${key}">${value}${suffix}</output></label><input id="preprocess-${key}" data-preprocess="${key}" type="range" min="${min}" max="${max}" step="1" value="${value}">`).join('')}<p class="control-note">正方形にしたあとも、写真を直接動かして残す位置を選べます。</p></div></div><div class="preprocess-footer"><button class="text-button" data-action="preprocess-reset-all">すべての調整を戻す</button><div><button class="button secondary" data-action="close-dialog">キャンセル</button><button class="button primary" data-action="preprocess-apply">この形を使う ${icon('arrow')}</button></div></div>`;
   }
   async openPreprocess(id) {
     const asset = this.asset(id); if (!asset) return;
@@ -142,6 +149,44 @@ export class Studio {
     const asset = this.asset(this.preprocessAssetId), canvas = document.querySelector('#preprocess-canvas');
     if (!asset || !canvas || !this.preprocessImage) return;
     drawPreprocessed(canvas, this.preprocessImage, { ...asset, preprocess: this.preprocessDraft }, 560);
+  }
+  syncPreprocessGestureControls() {
+    const zoom=document.querySelector('#preprocess-zoom'), output=document.querySelector('#preprocess-value-zoom');
+    if(zoom) zoom.value=String(Math.round(this.preprocessDraft.zoom*100));
+    if(output) output.textContent=`${Math.round(this.preprocessDraft.zoom*100)}%`;
+  }
+  onPreprocessPointerDown(event) {
+    if(event.target.id!=='preprocess-canvas' || !this.preprocessDraft) return;
+    event.preventDefault();
+    try { event.target.setPointerCapture?.(event.pointerId); } catch { /* Synthetic tests and older WebKit may not expose an active native pointer. */ }
+    this.preprocessPointers.set(event.pointerId,{x:event.clientX,y:event.clientY});
+    const points=[...this.preprocessPointers.values()];
+    if(points.length===1) this.preprocessGesture={mode:'drag',start:points[0],edit:structuredClone(this.preprocessDraft)};
+    else if(points.length===2) this.preprocessGesture={mode:'pinch',distance:Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y),zoom:this.preprocessDraft.zoom};
+  }
+  onPreprocessPointerMove(event) {
+    if(!this.preprocessPointers.has(event.pointerId) || !this.preprocessGesture) return;
+    event.preventDefault(); this.preprocessPointers.set(event.pointerId,{x:event.clientX,y:event.clientY});
+    const points=[...this.preprocessPointers.values()], asset=this.asset(this.preprocessAssetId), canvas=document.querySelector('#preprocess-canvas');
+    if(!asset || !canvas) return;
+    if(points.length>=2 && this.preprocessGesture.mode==='pinch') {
+      const distance=Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y);
+      this.preprocessDraft=normalizedPreprocess({...this.preprocessDraft,zoom:this.preprocessGesture.zoom*distance/Math.max(1,this.preprocessGesture.distance)});
+    } else if(points.length===1 && this.preprocessGesture.mode==='drag') {
+      const start=this.preprocessGesture.edit, placement=preprocessPlacement(asset,start), rect=canvas.getBoundingClientRect();
+      const angle=start.rotation*Math.PI/180, dx=points[0].x-this.preprocessGesture.start.x, dy=points[0].y-this.preprocessGesture.start.y;
+      const screenScale=rect.width/effectiveAssetSize(asset,start).width*placement.scale;
+      const localX=(dx*Math.cos(angle)+dy*Math.sin(angle))/screenScale, localY=(-dx*Math.sin(angle)+dy*Math.cos(angle))/screenScale;
+      const toFocus=(pan,min,max)=>max-min<1e-7?0:clamp(2*(pan-(min+max)/2)/(max-min),-1,1);
+      this.preprocessDraft=normalizedPreprocess({...start,focusX:toFocus(placement.panX+localX,placement.xMin,placement.xMax),focusY:toFocus(placement.panY+localY,placement.yMin,placement.yMax)});
+    }
+    this.syncPreprocessGestureControls(); this.renderPreprocessPreview();
+  }
+  onPreprocessPointerUp(event) {
+    if(!this.preprocessPointers.has(event.pointerId)) return;
+    this.preprocessPointers.delete(event.pointerId);
+    const points=[...this.preprocessPointers.values()];
+    this.preprocessGesture=points.length===1?{mode:'drag',start:points[0],edit:structuredClone(this.preprocessDraft)}:null;
   }
   squarePreprocess(asset, rotation = normalizedPreprocess(asset.preprocess).rotation) {
     const size = effectiveAssetSize(asset, { ...neutralPreprocess(), rotation });
@@ -364,7 +409,7 @@ export class Studio {
     } finally { this.sharing=false; button.disabled=false; }
   }
   showHelp() {
-    this.dialog.innerHTML = `<div class="dialog-header"><span class="eyebrow">A LITTLE GUIDE</span><button class="icon-button" data-action="close-dialog" aria-label="使い方を閉じる">${icon('close')}</button></div><h2 class="dialog-title">「つづく」の使い方。</h2><div class="help-copy"><h3>写真を選ぶだけで、まずは完成。</h3><p>縦横比を見て、横長の写真を2枚以上に、縦長の写真を1枚に配置します。写真の内容を理解するAIではなく、形に合わせるおまかせ機能です。好みと違うところだけ調整してください。</p><h3>配置の前に、元写真を整える。</h3><p>写真ごとの「元写真を整える」で、傾きと上下左右の不要部分を調整できます。「正方形にする」は中央の最大正方形を作り、その後も各辺を微調整できます。「正方形＋上下余白の1枚にする」なら、横写真の連結と同じ投稿に混ぜられます。編集は非破壊で、元ファイルを変更しません。</p><h3>横長写真を、ひとつながりに。</h3><p>写真を選び「何枚につなぐ？」を2枚にします。「全体を残す」なら写真を切らずに配置。「枠いっぱい」なら、余白をなくす代わりにはみ出す部分を切り取ります。内部の境界には余白を入れません。</p><h3>2枚を組み合わせる。</h3><p>「次の写真と組み合わせる」で隣り合う写真を一組にできます。「重ねてつなぐ」は写真をページ境界にまたがるレイアウトに。「2枚を並べる」なら、1ページでは上下、2ページ以上では左右に配置します。</p><h3>保存して、Instagramで投稿。</h3><p>書き出し後に共有メニューを開き、「画像を保存」があれば選択します。見つからない場合は1枚ずつ保存してください。Instagramアプリでは番号順に複数選択し、同じ比率のまま投稿します。自動投稿やInstagramログインは使いません。</p><h3>写真と下書きについて。</h3><p>写真はサーバーへ送信せず、ブラウザの中で処理します。下書きはこの端末のブラウザ内に自動保存しますが、プライベートブラウズ・容量不足・ブラウザデータ削除などで失われることがあります。大切な編集は「下書きを持ち出す」で保存してください。別の端末には自動同期しません。同じ編集は1つのタブで行ってください。</p><p>JPEG・PNG・WebPに対応。HEICはブラウザが読み込める場合に対応し、対応するSafariでの利用を想定しています。透明部分は白に、写真は長辺4096px・約8MP以内の作業用JPEGに変換します。元の写真は変更しません。最大20写真、出力20枚、写真1枚40MBまでです。巨大な写真は端末メモリの制限で失敗する場合があります。</p><p>初回表示には通信が必要です。アプリ本体の配信先には一般的なアクセスログが残る場合がありますが、写真のアップロード先や解析サービスは設けていません。</p></div><button class="button primary" data-action="close-dialog">はじめよう ${icon('arrow')}</button>`;
+    this.dialog.innerHTML = `<div class="dialog-header"><span class="eyebrow">A LITTLE GUIDE</span><button class="icon-button" data-action="close-dialog" aria-label="使い方を閉じる">${icon('close')}</button></div><h2 class="dialog-title">「つづく」の使い方。</h2><div class="help-copy"><h3>写真を選ぶだけで、まずは完成。</h3><p>縦横比を見て、横長の写真を2枚以上に、縦長の写真を1枚に配置します。写真の内容を理解するAIではなく、形に合わせるおまかせ機能です。好みと違うところだけ調整してください。</p><h3>配置の前に、元写真を整える。</h3><p>写真ごとの「元写真を整える」で、写真を1本指で移動、2本指で拡大できます。傾きと上下左右の不要部分も調整でき、白場が出る位置には動きません。「正方形にする」後も写真を直接動かせます。「正方形＋上下余白の1枚にする」なら、横写真の連結と同じ投稿に混ぜられます。編集は非破壊で、元ファイルを変更しません。</p><h3>横長写真を、ひとつながりに。</h3><p>写真を選び「何枚につなぐ？」を2枚にします。「全体を残す」なら写真を切らずに配置。「枠いっぱい」なら、余白をなくす代わりにはみ出す部分を切り取ります。内部の境界には余白を入れません。</p><h3>2枚を組み合わせる。</h3><p>「次の写真と組み合わせる」で隣り合う写真を一組にできます。「重ねてつなぐ」は写真をページ境界にまたがるレイアウトに。「2枚を並べる」なら、1ページでは上下、2ページ以上では左右に配置します。</p><h3>保存して、Instagramで投稿。</h3><p>書き出し後に共有メニューを開き、「画像を保存」があれば選択します。見つからない場合は1枚ずつ保存してください。Instagramアプリでは番号順に複数選択し、同じ比率のまま投稿します。自動投稿やInstagramログインは使いません。</p><h3>写真と下書きについて。</h3><p>写真はサーバーへ送信せず、ブラウザの中で処理します。下書きはこの端末のブラウザ内に自動保存しますが、プライベートブラウズ・容量不足・ブラウザデータ削除などで失われることがあります。大切な編集は「下書きを持ち出す」で保存してください。別の端末には自動同期しません。同じ編集は1つのタブで行ってください。</p><p>JPEG・PNG・WebPに対応。HEICはブラウザが読み込める場合に対応し、対応するSafariでの利用を想定しています。透明部分は白に、写真は長辺4096px・約8MP以内の作業用JPEGに変換します。元の写真は変更しません。最大20写真、出力20枚、写真1枚40MBまでです。巨大な写真は端末メモリの制限で失敗する場合があります。</p><p>初回表示には通信が必要です。アプリ本体の配信先には一般的なアクセスログが残る場合がありますが、写真のアップロード先や解析サービスは設けていません。</p></div><button class="button primary" data-action="close-dialog">はじめよう ${icon('arrow')}</button>`;
     this.dialog.showModal();
   }
   async onClick(event) {
@@ -394,6 +439,11 @@ export class Studio {
         const slider=document.querySelector('#preprocess-rotation'), output=document.querySelector('#preprocess-value-rotation');
         if(slider) slider.value=String(this.preprocessDraft.rotation);
         if(output) output.textContent=`${this.preprocessDraft.rotation.toFixed(1)}°`;
+        this.renderPreprocessPreview(); return;
+      }
+      if (action === 'preprocess-recenter') {
+        if(!this.preprocessDraft) return;
+        this.preprocessDraft=normalizedPreprocess({...this.preprocessDraft,focusX:0,focusY:0});
         this.renderPreprocessPreview(); return;
       }
       if (action === 'preprocess-reset-all') {
@@ -466,7 +516,9 @@ export class Studio {
     const preprocessKey=event.target.dataset.preprocess;
     if(preprocessKey && this.preprocessDraft) {
       const value=Number(event.target.value), next=structuredClone(this.preprocessDraft);
-      if(preprocessKey==='rotation') next.rotation=value; else next.crop[preprocessKey]=value/100;
+      if(preprocessKey==='rotation') next.rotation=value;
+      else if(preprocessKey==='zoom') next.zoom=value/100;
+      else next.crop[preprocessKey]=value/100;
       this.preprocessDraft=normalizedPreprocess(next);
       const output=document.querySelector(`#preprocess-value-${preprocessKey}`); if(output) output.textContent=preprocessKey==='rotation' ? `${value.toFixed(1)}°` : `${value}%`;
       this.renderPreprocessPreview(); return;

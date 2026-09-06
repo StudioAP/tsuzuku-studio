@@ -9,11 +9,14 @@ export const THEMES = Object.freeze({ edge: { name: '余白なし', background: 
 export const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 export const uid = () => globalThis.crypto.randomUUID();
 export const neutralTransform = () => ({ zoom: 1, focusX: 0, focusY: 0 });
-export const neutralPreprocess = () => ({ rotation: 0, crop: { left: 0, right: 0, top: 0, bottom: 0 } });
+export const neutralPreprocess = () => ({ rotation: 0, zoom: 1, focusX: 0, focusY: 0, crop: { left: 0, right: 0, top: 0, bottom: 0 } });
 export function normalizedPreprocess(value = {}) {
   const crop = value.crop || {};
   const normalized = {
     rotation: clamp(Number(value.rotation) || 0, -180, 180),
+    zoom: clamp(Number(value.zoom) || 1, 1, 3),
+    focusX: clamp(Number(value.focusX) || 0, -1, 1),
+    focusY: clamp(Number(value.focusY) || 0, -1, 1),
     crop: {
       left: clamp(Number(crop.left) || 0, 0, .95),
       right: clamp(Number(crop.right) || 0, 0, .95),
@@ -41,6 +44,23 @@ export function rotationCoverScale(width, height, degrees) {
   const angle = Math.abs(degrees) * Math.PI / 180;
   const cosine = Math.abs(Math.cos(angle)), sine = Math.abs(Math.sin(angle));
   return Math.max(cosine + (height / width) * sine, cosine + (width / height) * sine);
+}
+/** Image-local translation and bounds that keep the cropped output frame fully covered. */
+export function preprocessPlacement(asset, preprocess = asset.preprocess) {
+  const edit = normalizedPreprocess(preprocess), angle = edit.rotation * Math.PI / 180;
+  const cosine = Math.cos(angle), sine = Math.sin(angle);
+  const scale = rotationCoverScale(asset.width, asset.height, edit.rotation) * edit.zoom;
+  const xs = [-asset.width / 2 + edit.crop.left * asset.width, asset.width / 2 - edit.crop.right * asset.width];
+  const ys = [-asset.height / 2 + edit.crop.top * asset.height, asset.height / 2 - edit.crop.bottom * asset.height];
+  const localX = [], localY = [];
+  for (const x of xs) for (const y of ys) {
+    localX.push((x * cosine + y * sine) / scale);
+    localY.push((-x * sine + y * cosine) / scale);
+  }
+  const xMin = Math.max(...localX) - asset.width / 2, xMax = Math.min(...localX) + asset.width / 2;
+  const yMin = Math.max(...localY) - asset.height / 2, yMax = Math.min(...localY) + asset.height / 2;
+  const interpolate = (min, max, focus) => (min + max) / 2 + focus * (max - min) / 2;
+  return { scale, panX: interpolate(xMin, xMax, edit.focusX), panY: interpolate(yMin, yMax, edit.focusY), xMin, xMax, yMin, yMax };
 }
 export const slideCount = project => project.blocks.reduce((n, block) => n + block.span, 0);
 export function newProject() {
@@ -105,7 +125,7 @@ export function validateProject(project, assets) {
     if (!asset || !safeId(asset.id) || ids.has(asset.id)) bad('写真ID');
     if (typeof asset.name !== 'string' || asset.name.length > 255) bad('写真名');
     if (!Number.isInteger(asset.width) || !Number.isInteger(asset.height) || !finiteRange(asset.width, 1, 4096) || !finiteRange(asset.height, 1, 4096) || asset.width * asset.height > 8_010_000) bad('画像サイズ');
-    if (asset.preprocess && (!finiteRange(asset.preprocess.rotation, -180, 180) || !asset.preprocess.crop || ['left','right','top','bottom'].some(key => !finiteRange(asset.preprocess.crop[key], 0, .95)) || asset.preprocess.crop.left + asset.preprocess.crop.right >= .99 || asset.preprocess.crop.top + asset.preprocess.crop.bottom >= .99)) bad('写真の前処理');
+    if (asset.preprocess && (!finiteRange(asset.preprocess.rotation, -180, 180) || (asset.preprocess.zoom !== undefined && !finiteRange(asset.preprocess.zoom, 1, 3)) || (asset.preprocess.focusX !== undefined && !finiteRange(asset.preprocess.focusX, -1, 1)) || (asset.preprocess.focusY !== undefined && !finiteRange(asset.preprocess.focusY, -1, 1)) || !asset.preprocess.crop || ['left','right','top','bottom'].some(key => !finiteRange(asset.preprocess.crop[key], 0, .95)) || asset.preprocess.crop.left + asset.preprocess.crop.right >= .99 || asset.preprocess.crop.top + asset.preprocess.crop.bottom >= .99)) bad('写真の前処理');
     ids.add(asset.id);
   }
   if (!Array.isArray(project.blocks) || project.blocks.length > MAX_PHOTOS) bad('レイアウト数');

@@ -1,4 +1,4 @@
-import { MAX_FILE_BYTES, uid, effectiveAssetSize, normalizedPreprocess, neutralPreprocess, rotationCoverScale } from './model.js';
+import { MAX_FILE_BYTES, uid, effectiveAssetSize, normalizedPreprocess, neutralPreprocess, preprocessPlacement } from './model.js';
 export function sniffImage(bytes) {
   if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
   if ([137,80,78,71,13,10,26,10].every((b, i) => bytes[i] === b)) return 'image/png';
@@ -80,8 +80,9 @@ export function drawPreprocessed(canvas, image, asset, maxSide = Infinity) {
   ctx.translate(-edit.crop.left * size.frameWidth, -edit.crop.top * size.frameHeight);
   ctx.translate(size.frameWidth / 2, size.frameHeight / 2);
   ctx.rotate(edit.rotation * Math.PI / 180);
-  const coverScale = rotationCoverScale(asset.width, asset.height, edit.rotation);
-  ctx.scale(coverScale, coverScale);
+  const placement = preprocessPlacement(asset, edit);
+  ctx.scale(placement.scale, placement.scale);
+  ctx.translate(placement.panX, placement.panY);
   ctx.drawImage(image, -asset.width / 2, -asset.height / 2, asset.width, asset.height);
   return canvas;
 }
@@ -105,7 +106,7 @@ export class ImagePool {
     if (!asset) throw new Error('写真が見つかりません。');
     const source = await loadImage(asset.blob, this.signal);
     const edit = normalizedPreprocess(asset.preprocess);
-    const edited = edit.rotation !== 0 || Object.values(edit.crop).some(Boolean);
+    const edited = edit.rotation !== 0 || edit.zoom !== 1 || edit.focusX !== 0 || edit.focusY !== 0 || Object.values(edit.crop).some(Boolean);
     if (!edited) { this.cache.set(id, source); return source; }
     const canvas = drawPreprocessed(document.createElement('canvas'), source, asset);
     source.src = '';

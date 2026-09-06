@@ -101,7 +101,7 @@ components:
 
 ## Components
 - **Continuous Preview**: ページ境界を見せつつ、出力画像にガイドを混ぜない。
-- **Photo Preparation Dialog**: 元の縦横フレームを固定した回転、±0.1度の微調整、四辺トリミング、正方形プリセット、確定と取消を一画面に置く。回転中のプレビューに白場を見せない。
+- **Photo Preparation Dialog**: 写真面を直接1本指でドラッグ、2本指でピンチ拡大できることを主操作にする。元の縦横フレームを固定した回転、±0.1度の微調整、拡大スライダー、中央復帰、四辺トリミング、正方形プリセット、確定と取消も同じ画面に置く。回転・移動中のプレビューに白場を見せない。
 - **Selection Card**: サムネイル、ファイル名、1枚／連結／組み合わせ状態を一読できる。
 - **Primary Button**: 一画面一つ。黄緑面と濃色文字を使う。
 - **Range Control**: ラベルと現在値を同じ行に置き、変更中の結果を即時プレビューする。
@@ -110,6 +110,7 @@ components:
 - Do keep original photos untouched and describe edits as reversible preparation.
 - Do show whether a photo is square, cropped, or tilted before layout controls.
 - Do pair the rotation slider with explicit minus and plus buttons for fine correction.
+- Do use direct manipulation on the photo while retaining labeled controls as an accessible fallback.
 - Do preserve one output ratio while allowing differently prepared photos to coexist.
 - Do verify the hardest mobile viewport and the exported pixels.
 - Don't turn the editor into a free-form canvas with hidden gestures.
