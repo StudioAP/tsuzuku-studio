@@ -1,6 +1,6 @@
-import { newProject, autoBlocks, makeBlock, recommendSpan, moveBlock, joinNext, splitBlock, slideCount, RATIOS, THEMES, MAX_PHOTOS, MAX_SLIDES, validateProject, neutralTransform } from './model.js';
+import { newProject, autoBlocks, makeBlock, recommendSpan, moveBlock, joinNext, splitBlock, slideCount, RATIOS, THEMES, MAX_PHOTOS, MAX_SLIDES, validateProject, neutralTransform, neutralPreprocess, normalizedPreprocess, effectiveAssetSize } from './model.js';
 import { buildScene, lowResolutionIds } from './layout.js';
-import { importPhoto, ImagePool } from './images.js';
+import { importPhoto, ImagePool, loadImage, drawPreprocessed, refreshThumbnail } from './images.js';
 import { drawPage, exportPages, yieldToUI } from './renderer.js';
 import { loadDraft, saveDraft, clearDraft } from './storage.js';
 import { createBackup, restoreBackup } from './backup.js';
@@ -24,10 +24,11 @@ export class Studio {
     this.saveStatus = 'この端末だけで編集'; this.saveFailed = false;
     this.saveChain = Promise.resolve(); this.previewController = null;
     this.outputFiles = []; this.outputUrls = []; this.sharing = false;
+    this.preprocessAssetId = null; this.preprocessDraft = null; this.preprocessImage = null;
     document.addEventListener('click', event => this.onClick(event));
     document.addEventListener('input', event => this.onInput(event));
     document.addEventListener('change', event => this.onChange(event));
-    this.dialog.addEventListener('cancel', () => { this.exportController?.abort(); });
+    this.dialog.addEventListener('cancel', () => { this.exportController?.abort(); this.closePreprocess(); });
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden' && this.saveTimer) { clearTimeout(this.saveTimer); this.queueSave(); }
     });
@@ -100,6 +101,7 @@ export class Studio {
     if (!from.length) return;
     to.push(this.snapshot());
     const snapshot = from.pop(); this.project = snapshot.project; this.assets = snapshot.assets;
+    for (const url of this.urls.values()) URL.revokeObjectURL(url); this.urls.clear();
     this.activeRange = null; this.commit();
   }
   updateHistoryButtons() {
@@ -113,6 +115,52 @@ export class Studio {
   }
   asset(id) { return this.assets.find(asset => asset.id === id); }
   selectedBlock() { return this.project.blocks.find(block => block.id === this.selected); }
+  preprocessLabel(asset) {
+    const edit = normalizedPreprocess(asset?.preprocess);
+    const size = asset ? effectiveAssetSize(asset, edit) : null;
+    const square = size && Math.abs(size.width / size.height - 1) < .015;
+    const cropped = Object.values(edit.crop).some(value => value > .001);
+    return [square ? '正方形' : cropped ? 'トリミング済み' : '', edit.rotation ? `傾き ${edit.rotation}°` : ''].filter(Boolean).join('・') || '未調整';
+  }
+  closePreprocess() {
+    if (this.preprocessImage) this.preprocessImage.src = '';
+    this.preprocessImage = null; this.preprocessAssetId = null; this.preprocessDraft = null;
+  }
+  preprocessDialogHTML(asset) {
+    const edit = this.preprocessDraft;
+    const rows = [['rotation','傾き',-180,180,edit.rotation,'°'],['left','左を切る',0,95,Math.round(edit.crop.left*100),'%'],['right','右を切る',0,95,Math.round(edit.crop.right*100),'%'],['top','上を切る',0,95,Math.round(edit.crop.top*100),'%'],['bottom','下を切る',0,95,Math.round(edit.crop.bottom*100),'%']];
+    return `<div class="dialog-header"><span class="eyebrow">PREPARE THE PHOTO</span><button class="icon-button" data-action="close-dialog" aria-label="写真の前処理を閉じる">${icon('close')}</button></div><h2 class="dialog-title">元写真を整える</h2><p class="dialog-lead">配置や組み合わせの前に、傾きと不要な周囲を整えます。元ファイルは変更しません。</p><div class="preprocess-layout"><div class="preprocess-preview"><canvas id="preprocess-canvas" aria-label="前処理後の写真プレビュー"></canvas><span>前処理後の形</span></div><div class="preprocess-controls"><div class="preprocess-presets"><button class="button secondary" data-action="preprocess-preset" data-value="reset">切り取りなし</button><button class="button secondary square-preset" data-action="preprocess-preset" data-value="square">正方形にする</button></div>${rows.map(([key,label,min,max,value,suffix])=>`<label class="range-label" for="preprocess-${key}"><span>${label}</span><output id="preprocess-value-${key}">${value}${suffix}</output></label><input id="preprocess-${key}" data-preprocess="${key}" type="range" min="${min}" max="${max}" step="${key==='rotation'?'.5':'1'}" value="${value}">`).join('')}<p class="control-note">正方形にしたあとも、上下左右を動かして残す位置を選べます。</p></div></div><div class="preprocess-footer"><button class="text-button" data-action="preprocess-reset-all">傾きと切り取りをすべて戻す</button><div><button class="button secondary" data-action="close-dialog">キャンセル</button><button class="button primary" data-action="preprocess-apply">この形を使う ${icon('arrow')}</button></div></div>`;
+  }
+  async openPreprocess(id) {
+    const asset = this.asset(id); if (!asset) return;
+    this.closePreprocess(); this.preprocessAssetId = id; this.preprocessDraft = normalizedPreprocess(asset.preprocess);
+    this.dialog.innerHTML = this.preprocessDialogHTML(asset); this.dialog.showModal();
+    this.preprocessImage = await loadImage(asset.blob);
+    this.renderPreprocessPreview();
+  }
+  renderPreprocessPreview() {
+    const asset = this.asset(this.preprocessAssetId), canvas = document.querySelector('#preprocess-canvas');
+    if (!asset || !canvas || !this.preprocessImage) return;
+    drawPreprocessed(canvas, this.preprocessImage, { ...asset, preprocess: this.preprocessDraft }, 560);
+  }
+  squarePreprocess(asset, rotation = normalizedPreprocess(asset.preprocess).rotation) {
+    const size = effectiveAssetSize(asset, { ...neutralPreprocess(), rotation });
+    const crop = { left: 0, right: 0, top: 0, bottom: 0 };
+    if (size.rotatedWidth > size.rotatedHeight) crop.left = crop.right = (1 - size.rotatedHeight / size.rotatedWidth) / 2;
+    else crop.top = crop.bottom = (1 - size.rotatedWidth / size.rotatedHeight) / 2;
+    return normalizedPreprocess({ rotation, crop });
+  }
+  async applyAssetPreprocess(id, preprocess, squareSingle = false) {
+    const asset = this.asset(id); if (!asset) return;
+    const before = this.snapshot(), nextAsset = { ...asset, preprocess: normalizedPreprocess(preprocess) };
+    nextAsset.thumbnail = await refreshThumbnail(nextAsset);
+    const assets = this.assets.map(item => item.id === id ? nextAsset : item);
+    let project = this.project;
+    if (squareSingle) project = { ...project, blocks: project.blocks.map(block => block.id === this.selected ? { ...block, span: 1, fit: 'contain' } : block) };
+    validateProject(project, assets); this.pushHistory(before); this.assets = assets; this.project = project;
+    const url = this.urls.get(id); if (url) URL.revokeObjectURL(url); this.urls.delete(id);
+    this.commit();
+  }
   render() {
     this.previewController?.abort();
     const oldStage = document.querySelector('#preview-scroll');
@@ -192,7 +240,8 @@ export class Studio {
     const transform = block.transforms[this.selectedPhoto];
     return `<section class="selection-controls" aria-label="選んだ写真の設定"><div class="selection-heading"><span class="field-caption">選んだ写真の見せ方</span><span class="selected-dot"></span></div><label class="control-label">何枚につなぐ？</label><div class="span-picker" aria-label="分割枚数">${[1,2,3,4,5,6].map(span => `<button data-action="span" data-value="${span}" ${pressed(block.span === span)} ${disabled(this.busy || slideCount(this.project) - block.span + span > MAX_SLIDES)}>${span}<small>枚</small></button>`).join('')}</div>
       ${block.photoIds.length === 2 ? `<label class="control-label">組み合わせ方</label><div class="segmented fill"><button data-action="layout" data-value="duo" ${pressed(block.layout === 'duo')} ${disabled(this.busy)}>2枚を並べる</button><button data-action="layout" data-value="overlap" ${pressed(block.layout === 'overlap')} ${disabled(this.busy)}>重ねてつなぐ</button></div>` : ''}
-      <label class="control-label">写真の収め方</label><div class="segmented fill"><button data-action="fit" data-value="contain" ${pressed(block.fit === 'contain')} ${disabled(this.busy)}>全体を残す</button><button data-action="fit" data-value="cover" ${pressed(block.fit === 'cover')} ${disabled(this.busy)}>枠いっぱい</button></div><p class="control-note">${block.fit === 'contain' ? '写真を切らずに配置。形によって余白が入ります。' : '余白をなくして配置。はみ出す部分は切り取ります。'}</p>
+      <div class="preprocess-callout"><div><span class="control-label">配置前の写真</span><strong>${escapeHTML(this.preprocessLabel(this.asset(this.selectedPhoto)))}</strong><small>傾き・トリミング・正方形化</small></div><button class="button secondary" data-action="preprocess-open" data-id="${this.selectedPhoto}" ${disabled(this.busy)}>元写真を整える</button></div>${block.layout === 'single' ? `<button class="text-button square-single" data-action="square-single" data-id="${this.selectedPhoto}" ${disabled(this.busy)}>正方形＋上下余白の1枚にする</button>` : ''}
+      <label class="control-label">写真の収め方</label><div class="segmented fill"><button data-action="fit" data-value="contain" ${pressed(block.fit === 'contain')} ${disabled(this.busy)}>全体を残す</button><button data-action="fit" data-value="cover" ${pressed(block.fit === 'cover')} ${disabled(this.busy)}>枠いっぱい</button></div><p class="control-note">${block.fit === 'contain' ? '前処理後の写真を切らずに配置。正方形なら上下に余白が入ります。' : '前処理後の写真を枠いっぱいに配置。はみ出す部分は切り取ります。'}</p>
       <details class="fine-tune"><summary>見せる位置の微調整 <span>＋</span></summary><div class="fine-tune-body">${block.photoIds.length === 2 ? `<div class="photo-target">${block.photoIds.map((id, i) => `<button data-action="photo-target" data-id="${id}" ${pressed(id === this.selectedPhoto)}>写真 ${i + 1}</button>`).join('')}</div>` : ''}
         ${[['zoom','拡大',100,250,Math.round(transform.zoom*100),'%'],['focusX','横の位置',-100,100,Math.round(transform.focusX*100),''],['focusY','縦の位置',-100,100,Math.round(transform.focusY*100),'']].map(([key,label,min,max,value,suffix]) => `<label class="range-label" for="range-${key}"><span>${label}</span><output id="value-${key}">${value}${suffix}</output></label><input id="range-${key}" data-transform="${key}" type="range" min="${min}" max="${max}" step="1" value="${value}" ${disabled(this.busy)}>`).join('')}<button class="text-button" data-action="reset-transform" ${disabled(this.busy)}>位置と拡大をリセット</button><p class="control-note">拡大すると「全体を残す」でも一部が切れます。</p></div></details>
       <button class="button secondary mobile-jump preview-return" data-action="jump-preview">つながりを確認する ↑</button><div class="block-actions">${block.photoIds.length === 2 ? `<button class="text-button" data-action="split" ${disabled(this.busy)}>2枚を別々に戻す</button>` : next?.photoIds.length === 1 ? `<button class="text-button" data-action="join" ${disabled(this.busy)}>${icon('layers')} 次の写真と組み合わせる</button>` : ''}<button class="text-button danger" data-action="remove" ${disabled(this.busy)}>${icon('trash')} ${block.photoIds.length === 2 ? 'この組を' : 'この写真を'}外す</button></div></section>`;
@@ -263,6 +312,7 @@ export class Studio {
     try {
       const backup = await restoreBackup(file, (i,n)=>this.updateBusy(`下書きの写真を確認中 ${i} / ${n}`));
       this.pushHistory(this.snapshot()); this.project = backup.project; this.assets = backup.assets;
+      for (const url of this.urls.values()) URL.revokeObjectURL(url); this.urls.clear();
       this.selected = this.project.blocks[0]?.id; this.notice = ''; this.commit(false);
       this.toast('下書きを読み込みました。');
     } catch (error) { this.notice = error.message; }
@@ -314,7 +364,7 @@ export class Studio {
     } finally { this.sharing=false; button.disabled=false; }
   }
   showHelp() {
-    this.dialog.innerHTML = `<div class="dialog-header"><span class="eyebrow">A LITTLE GUIDE</span><button class="icon-button" data-action="close-dialog" aria-label="使い方を閉じる">${icon('close')}</button></div><h2 class="dialog-title">「つづく」の使い方。</h2><div class="help-copy"><h3>写真を選ぶだけで、まずは完成。</h3><p>縦横比を見て、横長の写真を2枚以上に、縦長の写真を1枚に配置します。写真の内容を理解するAIではなく、形に合わせるおまかせ機能です。好みと違うところだけ調整してください。</p><h3>横長写真を、ひとつながりに。</h3><p>写真を選び「何枚につなぐ？」を2枚にします。「全体を残す」なら写真を切らずに配置。「枠いっぱい」なら、余白をなくす代わりにはみ出す部分を切り取ります。内部の境界には余白を入れません。</p><h3>2枚を組み合わせる。</h3><p>「次の写真と組み合わせる」で隣り合う写真を一組にできます。「重ねてつなぐ」は写真をページ境界にまたがるレイアウトに。「2枚を並べる」なら、1ページでは上下、2ページ以上では左右に配置します。</p><h3>保存して、Instagramで投稿。</h3><p>書き出し後に共有メニューを開き、「画像を保存」があれば選択します。見つからない場合は1枚ずつ保存してください。Instagramアプリでは番号順に複数選択し、同じ比率のまま投稿します。自動投稿やInstagramログインは使いません。</p><h3>写真と下書きについて。</h3><p>写真はサーバーへ送信せず、ブラウザの中で処理します。下書きはこの端末のブラウザ内に自動保存しますが、プライベートブラウズ・容量不足・ブラウザデータ削除などで失われることがあります。大切な編集は「下書きを持ち出す」で保存してください。別の端末には自動同期しません。同じ編集は1つのタブで行ってください。</p><p>JPEG・PNG・WebPに対応。HEICはブラウザが読み込める場合に対応し、対応するSafariでの利用を想定しています。透明部分は白に、写真は長辺4096px・約8MP以内の作業用JPEGに変換します。元の写真は変更しません。最大20写真、出力20枚、写真1枚40MBまでです。巨大な写真は端末メモリの制限で失敗する場合があります。</p><p>初回表示には通信が必要です。アプリ本体の配信先には一般的なアクセスログが残る場合がありますが、写真のアップロード先や解析サービスは設けていません。</p></div><button class="button primary" data-action="close-dialog">はじめよう ${icon('arrow')}</button>`;
+    this.dialog.innerHTML = `<div class="dialog-header"><span class="eyebrow">A LITTLE GUIDE</span><button class="icon-button" data-action="close-dialog" aria-label="使い方を閉じる">${icon('close')}</button></div><h2 class="dialog-title">「つづく」の使い方。</h2><div class="help-copy"><h3>写真を選ぶだけで、まずは完成。</h3><p>縦横比を見て、横長の写真を2枚以上に、縦長の写真を1枚に配置します。写真の内容を理解するAIではなく、形に合わせるおまかせ機能です。好みと違うところだけ調整してください。</p><h3>配置の前に、元写真を整える。</h3><p>写真ごとの「元写真を整える」で、傾きと上下左右の不要部分を調整できます。「正方形にする」は中央の最大正方形を作り、その後も各辺を微調整できます。「正方形＋上下余白の1枚にする」なら、横写真の連結と同じ投稿に混ぜられます。編集は非破壊で、元ファイルを変更しません。</p><h3>横長写真を、ひとつながりに。</h3><p>写真を選び「何枚につなぐ？」を2枚にします。「全体を残す」なら写真を切らずに配置。「枠いっぱい」なら、余白をなくす代わりにはみ出す部分を切り取ります。内部の境界には余白を入れません。</p><h3>2枚を組み合わせる。</h3><p>「次の写真と組み合わせる」で隣り合う写真を一組にできます。「重ねてつなぐ」は写真をページ境界にまたがるレイアウトに。「2枚を並べる」なら、1ページでは上下、2ページ以上では左右に配置します。</p><h3>保存して、Instagramで投稿。</h3><p>書き出し後に共有メニューを開き、「画像を保存」があれば選択します。見つからない場合は1枚ずつ保存してください。Instagramアプリでは番号順に複数選択し、同じ比率のまま投稿します。自動投稿やInstagramログインは使いません。</p><h3>写真と下書きについて。</h3><p>写真はサーバーへ送信せず、ブラウザの中で処理します。下書きはこの端末のブラウザ内に自動保存しますが、プライベートブラウズ・容量不足・ブラウザデータ削除などで失われることがあります。大切な編集は「下書きを持ち出す」で保存してください。別の端末には自動同期しません。同じ編集は1つのタブで行ってください。</p><p>JPEG・PNG・WebPに対応。HEICはブラウザが読み込める場合に対応し、対応するSafariでの利用を想定しています。透明部分は白に、写真は長辺4096px・約8MP以内の作業用JPEGに変換します。元の写真は変更しません。最大20写真、出力20枚、写真1枚40MBまでです。巨大な写真は端末メモリの制限で失敗する場合があります。</p><p>初回表示には通信が必要です。アプリ本体の配信先には一般的なアクセスログが残る場合がありますが、写真のアップロード先や解析サービスは設けていません。</p></div><button class="button primary" data-action="close-dialog">はじめよう ${icon('arrow')}</button>`;
     this.dialog.showModal();
   }
   async onClick(event) {
@@ -322,7 +372,7 @@ export class Studio {
     if (!button || button.disabled) return;
     const action = button.dataset.action;
     try {
-      if (action === 'close-dialog') { this.exportController?.abort(); this.dialog.close(); return; }
+      if (action === 'close-dialog') { this.exportController?.abort(); this.closePreprocess(); this.dialog.close(); return; }
       if (action === 'help') { if (!this.busy) this.showHelp(); return; }
       if (action === 'share-all') { await this.runShare(this.outputFiles,button); return; }
       if (action === 'share-one') {
@@ -332,6 +382,19 @@ export class Studio {
         return;
       }
       if (action === 'export-zip') { button.disabled=true; try { const blob=await createExportZip(this.outputFiles); downloadBlob(blob,'tsuzuku-images.zip'); this.dialogMessage('ZIPの保存を開始しました。写真アプリへは直接入りません。'); } finally { button.disabled=false; } return; }
+      if (action === 'preprocess-preset') {
+        const asset=this.asset(this.preprocessAssetId); if(!asset) return;
+        this.preprocessDraft=button.dataset.value==='square' ? this.squarePreprocess(asset,this.preprocessDraft.rotation) : { ...this.preprocessDraft,crop:neutralPreprocess().crop };
+        this.dialog.innerHTML=this.preprocessDialogHTML(asset); this.renderPreprocessPreview(); return;
+      }
+      if (action === 'preprocess-reset-all') {
+        const asset=this.asset(this.preprocessAssetId); if(!asset) return;
+        this.preprocessDraft=neutralPreprocess(); this.dialog.innerHTML=this.preprocessDialogHTML(asset); this.renderPreprocessPreview(); return;
+      }
+      if (action === 'preprocess-apply') {
+        const id=this.preprocessAssetId, edit=structuredClone(this.preprocessDraft); this.closePreprocess(); this.dialog.close();
+        this.busy=true; this.render(); try { await this.applyAssetPreprocess(id,edit); } finally { this.busy=false; this.render(); } return;
+      }
       if (this.busy) return;
       switch(action) {
         case 'jump-edit': document.querySelector('.edit-panel')?.scrollIntoView({block:'start',behavior:'smooth'}); break;
@@ -343,6 +406,12 @@ export class Studio {
         case 'view': this.previewMode=button.dataset.value; this.render(); break;
         case 'select': this.selected=button.dataset.id; this.selectedPhoto=null; this.render(); this.focusSelectedPreview(); break;
         case 'photo-target': this.selectedPhoto=button.dataset.id; this.render(); document.querySelector('.fine-tune')?.setAttribute('open',''); break;
+        case 'preprocess-open': await this.openPreprocess(button.dataset.id); break;
+        case 'square-single': {
+          const asset=this.asset(button.dataset.id); if(!asset) break;
+          this.busy=true; this.render(); try { await this.applyAssetPreprocess(asset.id,this.squarePreprocess(asset),true); } finally { this.busy=false; this.render(); }
+          this.toast('正方形に整え、上下余白の1枚にしました。'); break;
+        }
         case 'ratio': this.edit(project=>({...project,ratio:button.dataset.value})); break;
         case 'theme': this.edit(project=>({...project,theme:button.dataset.value})); break;
         case 'span': this.editBlock(block=>({...block,span:Number(button.dataset.value)})); break;
@@ -385,6 +454,14 @@ export class Studio {
     } catch(error) { this.toast(error.message || '操作を完了できませんでした。',true); }
   }
   onInput(event) {
+    const preprocessKey=event.target.dataset.preprocess;
+    if(preprocessKey && this.preprocessDraft) {
+      const value=Number(event.target.value), next=structuredClone(this.preprocessDraft);
+      if(preprocessKey==='rotation') next.rotation=value; else next.crop[preprocessKey]=value/100;
+      this.preprocessDraft=normalizedPreprocess(next);
+      const output=document.querySelector(`#preprocess-value-${preprocessKey}`); if(output) output.textContent=`${value}${preprocessKey==='rotation'?'°':'%'}`;
+      this.renderPreprocessPreview(); return;
+    }
     const key=event.target.dataset.transform;
     if(!key || this.busy) return;
     if(!['zoom','focusX','focusY'].includes(key)) return;

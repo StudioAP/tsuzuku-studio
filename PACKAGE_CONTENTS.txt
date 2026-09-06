@@ -2,9 +2,10 @@
 ======================================
 
 展開後の最上位フォルダ: tsuzuku-studio/
-収録ファイル数: 91（この一覧とCHECKSUMS.sha256を含む）
+初回梱包時の収録ファイル数: 91（この一覧とCHECKSUMS.sha256を含む）
 元ZIPの79ファイルはすべて内容を変更せず収録。
 別添の異なる画面画像3点も収録。その他は統合ガイド・確認記録等の追加。
+継続開発でDESIGN.mdを追加。
 
 最初に開く: 00_READ_ME_FIRST.txt
 読みやすい総合ガイド: 01_MAC_GUIDE.html
@@ -23,6 +24,7 @@ Codexへ貼り付ける全文: 02_CODEX_REQUEST.txt
 02_CODEX_REQUEST.txt
 AGENTS.md
 CHECKSUMS.sha256
+DESIGN.md
 LICENSE
 MAC_HANDOFF.md
 PACKAGE_CONTENTS.txt

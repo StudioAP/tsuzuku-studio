@@ -9,6 +9,36 @@ export const THEMES = Object.freeze({ edge: { name: '余白なし', background: 
 export const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 export const uid = () => globalThis.crypto.randomUUID();
 export const neutralTransform = () => ({ zoom: 1, focusX: 0, focusY: 0 });
+export const neutralPreprocess = () => ({ rotation: 0, crop: { left: 0, right: 0, top: 0, bottom: 0 } });
+export function normalizedPreprocess(value = {}) {
+  const crop = value.crop || {};
+  const normalized = {
+    rotation: clamp(Number(value.rotation) || 0, -180, 180),
+    crop: {
+      left: clamp(Number(crop.left) || 0, 0, .95),
+      right: clamp(Number(crop.right) || 0, 0, .95),
+      top: clamp(Number(crop.top) || 0, 0, .95),
+      bottom: clamp(Number(crop.bottom) || 0, 0, .95),
+    },
+  };
+  const horizontal = normalized.crop.left + normalized.crop.right;
+  const vertical = normalized.crop.top + normalized.crop.bottom;
+  if (horizontal >= .99) normalized.crop.right = Math.max(0, .99 - normalized.crop.left);
+  if (vertical >= .99) normalized.crop.bottom = Math.max(0, .99 - normalized.crop.top);
+  return normalized;
+}
+export function effectiveAssetSize(asset, preprocess = asset.preprocess) {
+  const edit = normalizedPreprocess(preprocess);
+  const angle = edit.rotation * Math.PI / 180;
+  const rotatedWidth = Math.abs(asset.width * Math.cos(angle)) + Math.abs(asset.height * Math.sin(angle));
+  const rotatedHeight = Math.abs(asset.width * Math.sin(angle)) + Math.abs(asset.height * Math.cos(angle));
+  return {
+    width: Math.max(1, Math.round(rotatedWidth * (1 - edit.crop.left - edit.crop.right))),
+    height: Math.max(1, Math.round(rotatedHeight * (1 - edit.crop.top - edit.crop.bottom))),
+    rotatedWidth,
+    rotatedHeight,
+  };
+}
 export const slideCount = project => project.blocks.reduce((n, block) => n + block.span, 0);
 export function newProject() {
   return { version: VERSION, id: uid(), title: '新しいカルーセル', ratio: '4:5', theme: 'edge', format: 'jpeg', blocks: [] };
@@ -18,7 +48,8 @@ export function makeBlock(photoId, span = 1) {
 }
 /** Deterministic, aspect-ratio-based suggestion. Never claims to understand image content. */
 export function recommendSpan(asset, ratio) {
-  const aspect = asset.width / asset.height;
+  const size = effectiveAssetSize(asset);
+  const aspect = size.width / size.height;
   if (aspect < 1.2) return 1;
   const slideAspect = RATIOS[ratio].width / RATIOS[ratio].height;
   return clamp(Math.round(aspect / slideAspect), 2, 6);
@@ -71,6 +102,7 @@ export function validateProject(project, assets) {
     if (!asset || !safeId(asset.id) || ids.has(asset.id)) bad('写真ID');
     if (typeof asset.name !== 'string' || asset.name.length > 255) bad('写真名');
     if (!Number.isInteger(asset.width) || !Number.isInteger(asset.height) || !finiteRange(asset.width, 1, 4096) || !finiteRange(asset.height, 1, 4096) || asset.width * asset.height > 8_010_000) bad('画像サイズ');
+    if (asset.preprocess && (!finiteRange(asset.preprocess.rotation, -180, 180) || !asset.preprocess.crop || ['left','right','top','bottom'].some(key => !finiteRange(asset.preprocess.crop[key], 0, .95)) || asset.preprocess.crop.left + asset.preprocess.crop.right >= .99 || asset.preprocess.crop.top + asset.preprocess.crop.bottom >= .99)) bad('写真の前処理');
     ids.add(asset.id);
   }
   if (!Array.isArray(project.blocks) || project.blocks.length > MAX_PHOTOS) bad('レイアウト数');

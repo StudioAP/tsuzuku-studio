@@ -1,9 +1,9 @@
 import { validateProject, MAX_ARCHIVE_BYTES } from './model.js';
 import { makeZip, readZip } from './zip.js';
-import { sniffImage, loadImage, canvasBlob } from './images.js';
+import { sniffImage, loadImage, drawPreprocessed, canvasBlob } from './images.js';
 export async function createBackup(project, assets) {
   validateProject(project, assets);
-  const manifest = { app: 'tsuzuku', version: 1, project, assets: assets.map(({ id, name, width, height, originalWidth, originalHeight }) => ({ id, name, width, height, originalWidth, originalHeight })) };
+  const manifest = { app: 'tsuzuku', version: 1, project, assets: assets.map(({ id, name, width, height, originalWidth, originalHeight, preprocess }) => ({ id, name, width, height, originalWidth, originalHeight, preprocess })) };
   const archive = await makeZip([
     { name: 'project.json', data: JSON.stringify(manifest) },
     ...assets.map(asset => ({ name: `assets/${asset.id}.jpg`, data: asset.blob })),
@@ -29,16 +29,14 @@ export async function restoreBackup(file, onProgress, signal) {
     const image = await loadImage(blob, signal);
     try {
       if (image.naturalWidth !== record.width || image.naturalHeight !== record.height) throw new Error('下書きの画像サイズが一致しません。');
-      const scale = Math.min(1, 320 / Math.max(record.width, record.height));
-      const thumb = document.createElement('canvas');
-      thumb.width = Math.max(1, Math.round(record.width * scale)); thumb.height = Math.max(1, Math.round(record.height * scale));
-      thumb.getContext('2d', { alpha: false }).drawImage(image, 0, 0, thumb.width, thumb.height);
-      const thumbnail = await canvasBlob(thumb, 'image/jpeg', .8);
-      thumb.width = thumb.height = 1;
-      assets.push({ id: record.id, name: record.name, width: record.width, height: record.height,
+      const asset = { id: record.id, name: record.name, width: record.width, height: record.height,
         originalWidth: Number.isFinite(record.originalWidth) ? record.originalWidth : record.width,
         originalHeight: Number.isFinite(record.originalHeight) ? record.originalHeight : record.height,
-        blob, thumbnail });
+        blob, preprocess: record.preprocess };
+      const thumb = drawPreprocessed(document.createElement('canvas'), image, asset, 320);
+      asset.thumbnail = await canvasBlob(thumb, 'image/jpeg', .8);
+      thumb.width = thumb.height = 1;
+      assets.push(asset);
     } finally { image.src = ''; }
     onProgress?.(assets.length, manifest.assets.length);
   }

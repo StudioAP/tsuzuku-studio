@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { newProject, makeBlock, recommendSpan, autoBlocks, slideCount, moveBlock, joinNext, splitBlock, validateProject, RATIOS, MAX_SLIDES } from '../src/model.js';
+import { newProject, makeBlock, recommendSpan, autoBlocks, slideCount, moveBlock, joinNext, splitBlock, validateProject, RATIOS, MAX_SLIDES, effectiveAssetSize, neutralPreprocess } from '../src/model.js';
 const asset = (id, width=2400, height=1600) => ({id,name:`${id}.jpg`,width,height});
 function sample() { const assets=[asset('a'),asset('b',1200,1800),asset('c')]; return {assets,project:{...newProject(),blocks:autoBlocks(assets,'4:5')}}; }
 
@@ -18,4 +18,7 @@ for(const [name,mutate] of [
  ['unknown version',p=>p.version=9],['bad id',p=>p.id='<script>'],['oversized title',p=>p.title='x'.repeat(101)],['unknown ratio',p=>p.ratio='constructor'],['unknown theme',p=>p.theme='prototype'],['unknown format',p=>p.format='svg'],['fractional span',p=>p.blocks[0].span=1.5],['too many splits',p=>p.blocks[0].span=7],['missing photo',p=>p.blocks[0].photoIds=['absent']],['duplicate photo',p=>p.blocks[1].photoIds=['a']],['wrong pair',p=>p.blocks[0].layout='duo'],['invalid fit',p=>p.blocks[0].fit='squeeze'],['unsafe focus',p=>p.blocks[0].transforms.a.focusX=Infinity],['excess zoom',p=>p.blocks[0].transforms.a.zoom=4],['duplicate block id',p=>p.blocks[1].id=p.blocks[0].id]
 ]) test(`untrusted project rejected: ${name}`,()=>{const {project,assets}=sample();mutate(project);assert.throws(()=>validateProject(project,assets));});
 test('asset dimensions must be limited integers',()=>{const {project,assets}=sample();assets[0].width=50000;assert.throws(()=>validateProject(project,assets));});
+test('rotation and crop produce effective dimensions without changing source dimensions',()=>{const a=asset('a',2400,1600);a.preprocess={...neutralPreprocess(),rotation:90,crop:{left:.1,right:.1,top:0,bottom:0}};assert.deepEqual(effectiveAssetSize(a),{width:1280,height:2400,rotatedWidth:1600.0000000000002,rotatedHeight:2400});assert.deepEqual([a.width,a.height],[2400,1600]);});
+test('square preprocessing changes a landscape recommendation from two pages to one',()=>{const a=asset('a',2400,1600);a.preprocess={rotation:0,crop:{left:1/6,right:1/6,top:0,bottom:0}};assert.deepEqual(effectiveAssetSize(a).width,effectiveAssetSize(a).height);assert.equal(recommendSpan(a,'4:5'),1);});
+test('untrusted preprocessing crop is rejected',()=>{const {project,assets}=sample();assets[0].preprocess={rotation:0,crop:{left:.6,right:.4,top:0,bottom:0}};assert.throws(()=>validateProject(project,assets),/前処理/);});
 test('all admitted photo counts and ratios obey the invariants',()=>{for(let n=0;n<=20;n++)for(const ratio of Object.keys(RATIOS)){const assets=Array.from({length:n},(_,i)=>asset(`p${i}`,900+i*137,600+(i%3)*470));const project={...newProject(),ratio,blocks:autoBlocks(assets,ratio)};assert.ok(slideCount(project)<=MAX_SLIDES);assert.ok(validateProject(project,assets));}});

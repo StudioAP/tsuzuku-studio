@@ -1,4 +1,4 @@
-import { RATIOS, THEMES, clamp, slideCount } from './model.js';
+import { RATIOS, THEMES, clamp, slideCount, effectiveAssetSize } from './model.js';
 /**
  * A virtual strip, NOT a giant canvas. All geometry uses final-output pixels.
  * Internal page boundaries never influence photo scaling, cropping or padding.
@@ -49,7 +49,7 @@ export function buildScene(project, assets) {
       const asset = photos.get(id);
       if (!asset) throw new Error('写真が見つかりません。下書きを読み込み直してください。');
       const frame = pixelAligned(frames[i]);
-      const rect = pixelAligned(imageRect(asset, frame, block.fit, block.transforms[id]));
+      const rect = pixelAligned(imageRect(effectiveAssetSize(asset), frame, block.fit, block.transforms[id]));
       placements.push({ assetId: id, blockId: block.id, frame, rect, matte: block.layout === 'overlap' && i === 1 ? 14 : 0 });
     });
     blocks.push({ id: block.id, x, w, span: block.span, start: x / width });
@@ -61,6 +61,7 @@ export function lowResolutionIds(scene, assets) {
   const photos = new Map(assets.map(a => [a.id, a]));
   return [...new Set(scene.placements.filter(p => {
     const a = photos.get(p.assetId);
-    return p.rect.w > a.width * 1.3 || p.rect.h > a.height * 1.3;
+    const size = effectiveAssetSize(a);
+    return p.rect.w > size.width * 1.3 || p.rect.h > size.height * 1.3;
   }).map(p => p.assetId))];
 }

@@ -1,4 +1,4 @@
-import { MAX_FILE_BYTES, uid } from './model.js';
+import { MAX_FILE_BYTES, uid, effectiveAssetSize, normalizedPreprocess, neutralPreprocess } from './model.js';
 export function sniffImage(bytes) {
   if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
   if ([137,80,78,71,13,10,26,10].every((b, i) => bytes[i] === b)) return 'image/png';
@@ -64,7 +64,33 @@ export async function importPhoto(file, signal) {
   const thumbnail = await canvasBlob(thumb, 'image/jpeg', .8);
   canvas.width = canvas.height = 1; thumb.width = thumb.height = 1;
   signal?.throwIfAborted();
-  return { id: uid(), name: file.name.slice(0, 255), width, height, originalWidth, originalHeight, blob, thumbnail };
+  return { id: uid(), name: file.name.slice(0, 255), width, height, originalWidth, originalHeight, blob, thumbnail, preprocess: neutralPreprocess() };
+}
+export function drawPreprocessed(canvas, image, asset, maxSide = Infinity) {
+  const edit = normalizedPreprocess(asset.preprocess);
+  const size = effectiveAssetSize(asset, edit);
+  const scale = Math.min(1, maxSide / Math.max(size.width, size.height));
+  canvas.width = Math.max(1, Math.round(size.width * scale));
+  canvas.height = Math.max(1, Math.round(size.height * scale));
+  const ctx = canvas.getContext('2d', { alpha: false });
+  if (!ctx) throw new Error('この端末で画像を処理できませんでした。');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  ctx.scale(scale, scale);
+  ctx.translate(-edit.crop.left * size.rotatedWidth, -edit.crop.top * size.rotatedHeight);
+  ctx.translate(size.rotatedWidth / 2, size.rotatedHeight / 2);
+  ctx.rotate(edit.rotation * Math.PI / 180);
+  ctx.drawImage(image, -asset.width / 2, -asset.height / 2, asset.width, asset.height);
+  return canvas;
+}
+export async function refreshThumbnail(asset, signal) {
+  const image = await loadImage(asset.blob, signal);
+  try {
+    const canvas = drawPreprocessed(document.createElement('canvas'), image, asset, 320);
+    const thumbnail = await canvasBlob(canvas, 'image/jpeg', .8);
+    canvas.width = canvas.height = 1;
+    return thumbnail;
+  } finally { image.src = ''; }
 }
 /** Two decoded working photos at most, rather than retaining every full-resolution image. */
 export class ImagePool {
@@ -75,9 +101,14 @@ export class ImagePool {
     while (this.cache.size >= 2) { const key = this.cache.keys().next().value; this.cache.get(key).src = ''; this.cache.delete(key); }
     const asset = this.assets.get(id);
     if (!asset) throw new Error('写真が見つかりません。');
-    const image = await loadImage(asset.blob, this.signal);
-    this.cache.set(id, image);
-    return image;
+    const source = await loadImage(asset.blob, this.signal);
+    const edit = normalizedPreprocess(asset.preprocess);
+    const edited = edit.rotation !== 0 || Object.values(edit.crop).some(Boolean);
+    if (!edited) { this.cache.set(id, source); return source; }
+    const canvas = drawPreprocessed(document.createElement('canvas'), source, asset);
+    source.src = '';
+    this.cache.set(id, canvas);
+    return canvas;
   }
-  clear() { for (const image of this.cache.values()) image.src = ''; this.cache.clear(); }
+  clear() { for (const image of this.cache.values()) { if ('src' in image) image.src = ''; else image.width = image.height = 1; } this.cache.clear(); }
 }
