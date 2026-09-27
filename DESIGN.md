@@ -71,6 +71,17 @@ components:
     backgroundColor: "{colors.line}"
     textColor: "{colors.primary}"
     height: 1px
+  studio-order-dock:
+    backgroundColor: "{colors.neutral}"
+    textColor: "{colors.secondary}"
+    rounded: "{rounded.md}"
+    padding: 12px
+  studio-order-button:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.secondary}"
+    typography: "{typography.label}"
+    rounded: "{rounded.sm}"
+    height: 46px
 ---
 # Tsuzuku Studio Design System
 
@@ -91,7 +102,7 @@ components:
 - **Label**: 操作名と現在値を近接させ、英大文字のeyebrowは装飾的な補助情報に限定する。
 
 ## Layout
-デスクトップはプレビューを主、編集パネルを従とする二列。800px以下は一列にし、プレビューと編集を往復できる導線を置く。タッチ対象は原則44px以上。前処理は元写真と変更結果を同時に判断できる専用ダイアログに集約し、通常の並び替え画面を密集させない。
+デスクトップはプレビューを主、編集パネルを従とする二列。800px以下は一列にし、写真の順番・掲載ページ数・トリミング・仕上がりを一つの「スタジオ」にまとめる。選択中の写真は安定した位置の並べ替えドックから前後へ一段ずつ動かせ、先頭・末尾へも一度で移動できる。カード自体が動いても操作位置を追いかけさせず、編集や並び替え後は作業位置を保つ。タッチ対象は原則44px以上。前処理は元写真と変更結果を同時に判断できる専用ダイアログに集約する。
 
 ## Elevation & Depth
 基本は細い境界線で区切り、影は写真プレビューとモーダルだけに使う。写真編集面には淡い植物色のグラデーションを許可するが、コンテンツより強くしない。
@@ -101,6 +112,8 @@ components:
 
 ## Components
 - **Continuous Preview**: ページ境界を見せつつ、出力画像にガイドを混ぜない。
+- **Studio Workspace**: 投稿の形、背景、プレビュー、写真一覧、分割枚数、前処理を一つの編集場所に集約する。
+- **Stable Order Dock**: 選択写真の現在位置と、固定配置の「前へ」「次へ」「先頭へ」「末尾へ」を示す。移動でボタンの場所を変えない。
 - **Photo Preparation Dialog**: 写真面を直接1本指でドラッグ、2本指でピンチ拡大できることを主操作にする。元の縦横フレームを固定した回転、±0.1度の微調整、拡大スライダー、中央復帰、四辺トリミング、正方形プリセット、確定と取消も同じ画面に置く。回転・移動中のプレビューに白場を見せない。
 - **Selection Card**: サムネイル、ファイル名、1枚／連結／組み合わせ状態を一読できる。
 - **Primary Button**: 一画面一つ。黄緑面と濃色文字を使う。
@@ -111,9 +124,12 @@ components:
 - Do show whether a photo is square, cropped, or tilted before layout controls.
 - Do pair the rotation slider with explicit minus and plus buttons for fine correction.
 - Do use direct manipulation on the photo while retaining labeled controls as an accessible fallback.
+- Do keep repeated actions in a stable screen location and offer both one-step and direct-to-edge movement.
+- Do preserve the user's viewport and selected photo after a reorder.
 - Do preserve one output ratio while allowing differently prepared photos to coexist.
 - Do verify the hardest mobile viewport and the exported pixels.
 - Don't turn the editor into a free-form canvas with hidden gestures.
+- Don't require dragging or repeatedly chasing a moving per-photo control to reorder.
 - Don't use color alone to communicate selection or completion.
 - Don't place page numbers, crop guides, or controls in exported images.
 - Don't let secondary photo controls compete with the export action.

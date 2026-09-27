@@ -1,4 +1,4 @@
-import { newProject, autoBlocks, makeBlock, recommendSpan, moveBlock, joinNext, splitBlock, slideCount, RATIOS, THEMES, MAX_PHOTOS, MAX_SLIDES, validateProject, neutralTransform, neutralPreprocess, normalizedPreprocess, effectiveAssetSize, preprocessPlacement, clamp } from './model.js';
+import { newProject, autoBlocks, makeBlock, recommendSpan, moveBlockTo, joinNext, splitBlock, slideCount, RATIOS, THEMES, MAX_PHOTOS, MAX_SLIDES, validateProject, neutralTransform, neutralPreprocess, normalizedPreprocess, effectiveAssetSize, preprocessPlacement, clamp } from './model.js';
 import { buildScene, lowResolutionIds } from './layout.js';
 import { importPhoto, ImagePool, loadImage, drawPreprocessed, refreshThumbnail } from './images.js';
 import { drawPage, exportPages, yieldToUI } from './renderer.js';
@@ -210,6 +210,9 @@ export class Studio {
     this.previewController?.abort();
     const oldStage = document.querySelector('#preview-scroll');
     const scroll = oldStage?.scrollLeft || 0;
+    const pageScroll = window.scrollY;
+    const oldBlockList = document.querySelector('.block-list');
+    const blockListScroll = oldBlockList?.scrollTop || 0;
     const count = slideCount(this.project);
     this.root.innerHTML = `
       <header class="site-header">
@@ -226,6 +229,20 @@ export class Studio {
       ${this.busy && !this.exportController ? `<div class="busy-overlay" role="status"><div class="busy-card"><span class="spinner"></span><strong id="busy-label">${escapeHTML(this.busyLabel)}</strong><p>写真はこの端末で処理しています。</p></div></div>` : ''}`;
     if (this.assets.length) {
       const stage = document.querySelector('#preview-scroll'); if (stage) stage.scrollLeft = scroll;
+      const blockList = document.querySelector('.block-list');
+      if (blockList) {
+        blockList.scrollTop = blockListScroll;
+        if (this.revealSelectedBlock) {
+          const row = blockList.querySelector('.block-card.selected');
+          if (row) {
+            const listRect = blockList.getBoundingClientRect(), rowRect = row.getBoundingClientRect();
+            if (rowRect.top < listRect.top) blockList.scrollTop -= listRect.top - rowRect.top;
+            else if (rowRect.bottom > listRect.bottom) blockList.scrollTop += rowRect.bottom - listRect.bottom;
+          }
+          this.revealSelectedBlock = false;
+        }
+      }
+      window.scrollTo(window.scrollX, pageScroll);
       this.schedulePreview();
     } else {
       const canvas = document.querySelector('#hero-art'); if (canvas) paintLandscape(canvas.getContext('2d'), canvas.width, canvas.height);
@@ -252,20 +269,21 @@ export class Studio {
   editorHTML(count) {
     const dimensions = RATIOS[this.project.ratio];
     return `<section class="editor-heading"><div><p class="eyebrow">YOUR STORY, CONTINUED.</p><h1>いつもの写真に、つづきを。</h1><p class="editor-subtitle">${this.assets.length}枚の写真 <span>→</span> <strong>${count}枚の投稿</strong><span class="dimensions">${dimensions.width} × ${dimensions.height} px</span></p></div><button class="button secondary" data-action="choose" ${disabled(this.busy || this.assets.length >= MAX_PHOTOS)}>${icon('plus')} 写真を追加</button></section>
-      <section class="workspace">
+      <section class="studio-shell" aria-labelledby="studio-heading"><header class="studio-heading"><div><p class="eyebrow">PHOTO EDITING DESK</p><h2 id="studio-heading">スタジオ</h2><p>並び・掲載枚数・切り取りを、ここでまとめて整えます。</p></div><span class="studio-summary">${this.project.blocks.length}ブロック · ${count}枚で投稿</span></header>
+      <section class="workspace" aria-label="スタジオの編集画面">
         <div class="canvas-column">
           <div class="format-toolbar"><div class="toolbar-group"><span class="field-caption">投稿の形</span><div class="segmented" aria-label="投稿の縦横比">${Object.keys(RATIOS).map(ratio => `<button data-action="ratio" data-value="${ratio}" ${pressed(this.project.ratio === ratio)} ${disabled(this.busy)}>${ratio}<small>${ratio === '1:1' ? '正方形' : '縦長'}</small></button>`).join('')}</div></div>
           <div class="toolbar-group"><span class="field-caption">スタイル</span><div class="theme-picker" aria-label="背景スタイル">${Object.entries(THEMES).map(([key, theme]) => `<button class="theme-option theme-${key}" data-action="theme" data-value="${key}" ${pressed(this.project.theme === key)} ${disabled(this.busy)}><span class="theme-swatch"></span>${theme.name}</button>`).join('')}</div></div></div>
-          <section class="preview-panel" aria-labelledby="preview-heading"><div class="panel-top"><h2 id="preview-heading"><span class="section-index">01</span> つながりを確認</h2><div class="view-switch"><button data-action="view" data-value="strip" ${pressed(this.previewMode === 'strip')}>つながり</button><button data-action="view" data-value="swipe" ${pressed(this.previewMode === 'swipe')}>スワイプ</button></div></div>
+          <section class="preview-panel" aria-labelledby="preview-heading"><div class="panel-top"><h2 id="preview-heading">仕上がりプレビュー</h2><div class="view-switch"><button data-action="view" data-value="strip" ${pressed(this.previewMode === 'strip')}>つながり</button><button data-action="view" data-value="swipe" ${pressed(this.previewMode === 'swipe')}>スワイプ</button></div></div>
             <div class="preview-stage"><div id="preview-scroll" class="preview-scroll ${this.previewMode}" tabindex="0" aria-label="投稿プレビュー。横にスクロールできます"><div class="tile-strip">${Array.from({ length: count }, (_, index) => `<div class="preview-tile" data-page="${index}"><canvas width="320" height="${Math.round(dimensions.height * 320 / 1080)}" aria-label="投稿 ${index + 1}枚目のプレビュー"></canvas><span class="page-number">${num(index + 1)}</span><span class="seam-guide" aria-hidden="true"></span></div>`).join('')}</div></div><div class="preview-hint"><span id="preview-status">プレビューを作成中…</span><span>← 横にスワイプ →</span></div></div>
-            <div class="preview-caption"><span>${icon('layers')} 番号とガイド線は、書き出す画像には入りません。</span><span class="count-pill">${num(count)} FRAMES</span><button class="text-button mobile-jump" data-action="jump-edit">写真を調整 ↓</button></div>
+            <div class="preview-caption"><span>${icon('layers')} 番号とガイド線は、書き出す画像には入りません。</span><span class="count-pill">${num(count)} FRAMES</span><button class="text-button mobile-jump" data-action="jump-edit">写真と並びを編集 ↓</button></div>
           </section>
           <div id="quality-warning" class="quality-warning" hidden></div>
           <section class="export-summary"><div><span class="eyebrow">READY TO SHARE</span><h2>できたら、Instagramへ。</h2><p>画像を保存して、Instagramアプリで順番に選びます。</p></div><label class="format-select">書き出し形式<select id="format-select" ${disabled(this.busy)}><option value="jpeg" ${this.project.format === 'jpeg' ? 'selected' : ''}>JPEG · 写真向け</option><option value="png" ${this.project.format === 'png' ? 'selected' : ''}>PNG · 大きめのファイル</option></select></label></section>
           <div class="project-tools"><div><button class="text-button" data-action="undo" ${disabled(!this.history.length || this.busy)}>${icon('restore')} 元に戻す</button><button class="text-button" data-action="redo" ${disabled(!this.future.length || this.busy)}>やり直す</button></div><details><summary>下書き・データ管理</summary><div class="project-menu"><button class="text-button" data-action="backup-save" ${disabled(this.busy)}>${icon('download')} 下書きを持ち出す</button><button class="text-button" data-action="backup-open" ${disabled(this.busy)}>下書きを読み込む</button><button class="text-button danger" data-action="new" ${disabled(this.busy)}>この端末の下書きを削除</button></div></details></div>
         </div>
-        <aside class="edit-panel" aria-labelledby="arrange-heading"><div class="panel-top"><h2 id="arrange-heading"><span class="section-index">02</span> 並べ方を整える</h2><button class="text-button auto-button" data-action="auto" ${disabled(this.busy)}>${icon('spark')} おまかせ</button></div><p class="panel-description">写真を選んで調整。↑ ↓ で順番を変更。</p><ol class="block-list">${this.blocksHTML()}</ol>${this.controlsHTML()}</aside>
-      </section>
+        <aside class="edit-panel" aria-labelledby="arrange-heading"><div class="panel-top"><h2 id="arrange-heading">写真と並び</h2><button class="text-button auto-button" data-action="auto" ${disabled(this.busy)}>${icon('spark')} おまかせ</button></div><p class="panel-description">写真を選ぶと、その掲載枚数や切り取りを下で調整できます。</p>${this.orderDockHTML()}<ol class="block-list">${this.blocksHTML()}</ol>${this.controlsHTML()}</aside>
+      </section></section>
       <div class="export-bar"><div><span class="export-count">${count}<small> / 20枚</small></span><span class="export-bar-note">${dimensions.width} × ${dimensions.height} · ${this.project.format.toUpperCase()}</span></div><button class="button primary export-button" data-action="export" ${disabled(this.busy || !count)}>${icon('download')} ${count}枚を書き出す ${icon('arrow')}</button></div>`;
   }
   blocksHTML() {
@@ -275,8 +293,13 @@ export class Studio {
       const names = block.photoIds.map(id => this.asset(id)?.name || '写真').join(' + ');
       const selected = this.selected === block.id;
       const subtitle = block.layout === 'single' ? `${block.span === 1 ? '1枚で見せる' : `${block.span}枚につなぐ`}` : block.layout === 'duo' ? '2枚を並べる' : '重ねてつなぐ';
-      return `<li class="block-card ${selected ? 'selected' : ''}"><button class="block-select" data-action="select" data-id="${block.id}" ${pressed(selected)} ${disabled(this.busy)} aria-label="${index + 1}番目の写真を調整: ${escapeHTML(names)}"><span class="block-thumb ${block.photoIds.length === 2 ? 'paired' : ''}">${block.photoIds.map(id => `<img src="${this.urls.get(id)}" alt="" width="52" height="58">`).join('')}</span><span class="block-description"><span class="block-name">${escapeHTML(names)}</span><span class="block-detail">${subtitle} <span>· ${num(first)}${block.span > 1 ? `–${num(start - 1)}` : ''}</span></span></span></button><div class="move-buttons"><button class="icon-button" data-action="move" data-index="${index}" data-direction="-1" ${disabled(this.busy || index === 0)} aria-label="${index + 1}番目を前へ">${icon('up')}</button><button class="icon-button" data-action="move" data-index="${index}" data-direction="1" ${disabled(this.busy || index === this.project.blocks.length - 1)} aria-label="${index + 1}番目を後ろへ">${icon('down')}</button></div></li>`;
+      return `<li class="block-card ${selected ? 'selected' : ''}"><button class="block-select" data-action="select" data-id="${block.id}" ${pressed(selected)} ${disabled(this.busy)} aria-label="${index + 1}番目の写真を調整: ${escapeHTML(names)}"><span class="block-thumb ${block.photoIds.length === 2 ? 'paired' : ''}">${block.photoIds.map(id => `<img src="${this.urls.get(id)}" alt="" width="52" height="58">`).join('')}</span><span class="block-description"><span class="block-name">${escapeHTML(names)}</span><span class="block-detail">${subtitle} <span>· 投稿 ${num(first)}${block.span > 1 ? `–${num(start - 1)}` : ''}</span></span></span></button></li>`;
     }).join('');
+  }
+  orderDockHTML() {
+    const block = this.selectedBlock(); if (!block) return '';
+    const index = this.project.blocks.findIndex(item => item.id === block.id), last = this.project.blocks.length - 1;
+    return `<div class="studio-order-dock" role="group" aria-label="選択中の写真の並び替え"><div class="studio-order-meta"><span class="field-caption">選択中の並び</span><strong>${num(index + 1)} / ${num(this.project.blocks.length)}</strong></div><div class="studio-order-buttons"><button class="studio-order-button" data-action="move-selected" data-direction="-1" ${disabled(this.busy || index === 0)} aria-label="選んだ写真を1つ前へ"><span aria-hidden="true">↑</span>前へ</button><button class="studio-order-button" data-action="move-selected" data-direction="1" ${disabled(this.busy || index === last)} aria-label="選んだ写真を1つ後ろへ"><span aria-hidden="true">↓</span>次へ</button><button class="studio-order-button studio-order-edge" data-action="move-selected" data-target="first" ${disabled(this.busy || index === 0)}>先頭へ</button><button class="studio-order-button studio-order-edge" data-action="move-selected" data-target="last" ${disabled(this.busy || index === last)}>末尾へ</button></div></div>`;
   }
   controlsHTML() {
     const block = this.selectedBlock(); if (!block) return '';
@@ -289,7 +312,7 @@ export class Studio {
       <label class="control-label">写真の収め方</label><div class="segmented fill"><button data-action="fit" data-value="contain" ${pressed(block.fit === 'contain')} ${disabled(this.busy)}>全体を残す</button><button data-action="fit" data-value="cover" ${pressed(block.fit === 'cover')} ${disabled(this.busy)}>枠いっぱい</button></div><p class="control-note">${block.fit === 'contain' ? '前処理後の写真を切らずに配置。正方形なら上下に余白が入ります。' : '前処理後の写真を枠いっぱいに配置。はみ出す部分は切り取ります。'}</p>
       <details class="fine-tune"><summary>見せる位置の微調整 <span>＋</span></summary><div class="fine-tune-body">${block.photoIds.length === 2 ? `<div class="photo-target">${block.photoIds.map((id, i) => `<button data-action="photo-target" data-id="${id}" ${pressed(id === this.selectedPhoto)}>写真 ${i + 1}</button>`).join('')}</div>` : ''}
         ${[['zoom','拡大',100,250,Math.round(transform.zoom*100),'%'],['focusX','横の位置',-100,100,Math.round(transform.focusX*100),''],['focusY','縦の位置',-100,100,Math.round(transform.focusY*100),'']].map(([key,label,min,max,value,suffix]) => `<label class="range-label" for="range-${key}"><span>${label}</span><output id="value-${key}">${value}${suffix}</output></label><input id="range-${key}" data-transform="${key}" type="range" min="${min}" max="${max}" step="1" value="${value}" ${disabled(this.busy)}>`).join('')}<button class="text-button" data-action="reset-transform" ${disabled(this.busy)}>位置と拡大をリセット</button><p class="control-note">拡大すると「全体を残す」でも一部が切れます。</p></div></details>
-      <button class="button secondary mobile-jump preview-return" data-action="jump-preview">つながりを確認する ↑</button><div class="block-actions">${block.photoIds.length === 2 ? `<button class="text-button" data-action="split" ${disabled(this.busy)}>2枚を別々に戻す</button>` : next?.photoIds.length === 1 ? `<button class="text-button" data-action="join" ${disabled(this.busy)}>${icon('layers')} 次の写真と組み合わせる</button>` : ''}<button class="text-button danger" data-action="remove" ${disabled(this.busy)}>${icon('trash')} ${block.photoIds.length === 2 ? 'この組を' : 'この写真を'}外す</button></div></section>`;
+      <button class="button secondary mobile-jump preview-return" data-action="jump-preview">スタジオの仕上がり ↑</button><div class="block-actions">${block.photoIds.length === 2 ? `<button class="text-button" data-action="split" ${disabled(this.busy)}>2枚を別々に戻す</button>` : next?.photoIds.length === 1 ? `<button class="text-button" data-action="join" ${disabled(this.busy)}>${icon('layers')} 次の写真と組み合わせる</button>` : ''}<button class="text-button danger" data-action="remove" ${disabled(this.busy)}>${icon('trash')} ${block.photoIds.length === 2 ? 'この組を' : 'この写真を'}外す</button></div></section>`;
   }
   schedulePreview() { clearTimeout(this.previewTimer); this.previewController?.abort(); this.previewTimer = setTimeout(() => this.renderPreview(), 100); }
   async renderPreview() {
@@ -476,7 +499,13 @@ export class Studio {
         case 'span': this.editBlock(block=>({...block,span:Number(button.dataset.value)})); break;
         case 'fit': this.editBlock(block=>({...block,fit:button.dataset.value})); break;
         case 'layout': this.editBlock(block=>({...block,layout:button.dataset.value})); break;
-        case 'move': this.edit(project=>moveBlock(project,Number(button.dataset.index),Number(button.dataset.direction))); break;
+        case 'move-selected': {
+          const from=this.project.blocks.findIndex(block=>block.id===this.selected);
+          const target=button.dataset.target==='first' ? 0 : button.dataset.target==='last' ? this.project.blocks.length-1 : from+Number(button.dataset.direction);
+          if(from<0 || from===target) break;
+          this.revealSelectedBlock=true;
+          this.edit(project=>moveBlockTo(project,from,target)); break;
+        }
         case 'join': this.edit(project=>joinNext(project,project.blocks.findIndex(b=>b.id===this.selected))); break;
         case 'split': this.edit(project=>splitBlock(project,project.blocks.findIndex(b=>b.id===this.selected))); break;
         case 'reset-transform': this.editBlock(block=>({...block,transforms:{...block.transforms,[this.selectedPhoto]:neutralTransform()}})); document.querySelector('.fine-tune')?.setAttribute('open',''); break;

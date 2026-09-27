@@ -1,0 +1,20 @@
+.studio-shell{margin-bottom:18px}
+.studio-heading{display:flex;align-items:end;justify-content:space-between;gap:16px;padding:3px 0 17px}
+.studio-heading .eyebrow{font-size:8px;letter-spacing:.14em;color:#89977c;margin:0 0 7px}
+.studio-heading h2{font-size:20px;font-weight:600;letter-spacing:.035em;margin:0 0 5px;color:#39483b}
+.studio-heading p:not(.eyebrow){font-size:11px;color:#7e8878;margin:0;line-height:1.7}
+.studio-summary{flex-shrink:0;border:1px solid #e2e8d9;background:#f2f5eb;color:#65735b;border-radius:9px;padding:9px 12px;font-size:10px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.edit-panel{overflow:visible}
+.studio-order-dock{margin:0 13px 3px;padding:10px 11px 11px;border:1px solid #dfe5d5;border-radius:12px;background:#f7f8f2;box-shadow:0 2px 9px #33431d0a}
+.studio-order-meta{display:flex;align-items:center;gap:9px;min-height:23px;margin:0 1px 7px}
+.studio-order-meta .field-caption{font-size:9px}
+.studio-order-meta strong{font-size:10px;color:#526444;font-variant-numeric:tabular-nums}
+.studio-order-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.studio-order-button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:46px;padding:6px 4px;border:1px solid #e1e6d9;border-radius:8px;background:#fff;color:#596750;font-size:10px;font-weight:550;white-space:nowrap;transition:background-color .15s,border-color .15s,transform .15s}
+.studio-order-button:not(:disabled):active{background:#e8efd9;border-color:#b8c998;transform:scale(.98)}
+.studio-order-button:focus-visible{outline:2px solid #829f4e;outline-offset:2px}
+.studio-order-button>span{font-size:14px;line-height:1}
+.studio-order-button:disabled{opacity:.42;cursor:default}
+.studio-order-edge{font-size:9px;background:#f8f9f5}
+@media(max-width:800px){.studio-shell{margin-bottom:13px}.studio-heading{padding:3px 0 14px}.studio-heading h2{font-size:19px}.studio-order-dock{margin-right:10px;margin-left:10px}}
+@media(max-width:550px){.studio-heading{align-items:flex-start;gap:8px;padding-bottom:13px}.studio-heading .eyebrow{font-size:7px;margin-bottom:5px}.studio-heading h2{font-size:18px;margin-bottom:4px}.studio-heading p:not(.eyebrow){font-size:9px;max-width:255px}.studio-summary{padding:7px 8px;font-size:8px;margin-top:18px}.studio-order-dock{padding:9px 9px 10px;border-radius:11px}.studio-order-buttons{gap:5px}.studio-order-button{min-height:46px;font-size:10px;padding:5px 2px}.studio-order-edge{font-size:9px}}

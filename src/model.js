@@ -98,6 +98,13 @@ export function moveBlock(project, index, direction) {
   [blocks[index], blocks[target]] = [blocks[target], blocks[index]];
   return { ...project, blocks };
 }
+export function moveBlockTo(project, index, target) {
+  if (!Number.isInteger(index) || !Number.isInteger(target) || index < 0 || target < 0 || index >= project.blocks.length || target >= project.blocks.length || index === target) return project;
+  const blocks = [...project.blocks];
+  const [block] = blocks.splice(index, 1);
+  blocks.splice(target, 0, block);
+  return { ...project, blocks };
+}
 export function joinNext(project, index) {
   const a = project.blocks[index], b = project.blocks[index + 1];
   if (!a || !b || a.photoIds.length !== 1 || b.photoIds.length !== 1) return project;
