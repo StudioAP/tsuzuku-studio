@@ -1,12 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { newProject, makeBlock, recommendSpan, autoBlocks, slideCount, moveBlock, joinNext, splitBlock, validateProject, RATIOS, MAX_SLIDES, effectiveAssetSize, neutralPreprocess, rotationCoverScale, preprocessPlacement, normalizedPreprocess } from '../src/model.js';
+import { newProject, makeBlock, recommendSpan, recommendFit, autoBlocks, slideCount, moveBlock, joinNext, splitBlock, validateProject, RATIOS, MAX_SLIDES, effectiveAssetSize, neutralPreprocess, rotationCoverScale, preprocessPlacement, normalizedPreprocess } from '../src/model.js';
 const asset = (id, width=2400, height=1600) => ({id,name:`${id}.jpg`,width,height});
 function sample() { const assets=[asset('a'),asset('b',1200,1800),asset('c')]; return {assets,project:{...newProject(),blocks:autoBlocks(assets,'4:5')}}; }
 
 test('default is a valid empty, portrait, JPEG project',()=>{const p=newProject(); assert.equal(p.ratio,'4:5');assert.equal(p.format,'jpeg');assert.equal(slideCount(p),0); assert.ok(validateProject(p,[]));});
 test('all output widths are 1080 with integer heights',()=>{assert.deepEqual(RATIOS,{'4:5':{width:1080,height:1350},'3:4':{width:1080,height:1440},'1:1':{width:1080,height:1080}});});
 for(const [w,h,ratio,expected] of [[2400,1600,'4:5',2],[2400,1600,'3:4',2],[1200,1800,'4:5',1],[1000,1000,'1:1',1],[4096,300,'4:5',6],[3600,1200,'1:1',3]]) test(`span suggestion ${w}×${h} ${ratio} → ${expected}`,()=>assert.equal(recommendSpan(asset('x',w,h),ratio),expected));
+test('default fit fills portrait frames and leaves square/landscape singles centered with top-bottom space',()=>{
+  assert.equal(recommendFit(asset('portrait',1200,1800),'4:5',1),'cover');
+  assert.equal(recommendFit(asset('square',1600,1600),'4:5',1),'contain');
+  assert.equal(recommendFit(asset('landscape',2400,1600),'4:5',1),'contain');
+  assert.equal(recommendFit(asset('panorama',2400,1600),'4:5',2),'cover');
+  assert.equal(recommendFit(asset('wide',4096,512),'4:5',5),'contain');
+});
 test('20 landscape photos fit into 20 slides without dropping/reordering any',()=>{const photos=Array.from({length:20},(_,i)=>asset(`p${i}`));const blocks=autoBlocks(photos,'4:5');assert.equal(blocks.reduce((n,b)=>n+b.span,0),20);assert.deepEqual(blocks.flatMap(b=>b.photoIds),photos.map(a=>a.id));});
 test('budget pressure reduces the largest spans first',()=>{const blocks=autoBlocks([asset('wide',4096,512),asset('portrait',900,1200)],'4:5',4); assert.deepEqual(blocks.map(b=>b.span),[3,1]);});
 test('auto layout rejects more photos than its budget',()=>assert.throws(()=>autoBlocks([asset('a'),asset('b')],'4:5',1)));

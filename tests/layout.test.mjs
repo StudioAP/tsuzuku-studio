@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {newProject,makeBlock} from '../src/model.js';
+import {newProject,makeBlock,recommendFit} from '../src/model.js';
 import {imageRect,buildScene,intersects,lowResolutionIds} from '../src/layout.js';
 const image={id:'a',width:3000,height:1500};
 const frame={x:100,y:20,w:2160,h:1350};
@@ -16,3 +16,11 @@ test('low resolution warning uses working pixels, not original-file metadata',()
 test('missing assets fail clearly before drawing',()=>assert.throws(()=>buildScene({...newProject(),blocks:[makeBlock('gone')]},[]),/写真/));
 test('even an extremely thin photo retains at least one output pixel',()=>{const a={id:'a',width:4096,height:1};const s=buildScene({...newProject(),ratio:'1:1',blocks:[makeBlock('a',1)]},[a]);assert.ok(s.placements[0].rect.h>=1);});
 test('a two-page panorama and square single photo coexist in one 4:5 post',()=>{const square={id:'b',width:2400,height:1600,preprocess:{rotation:0,crop:{left:1/6,right:1/6,top:0,bottom:0}}};const single=makeBlock('b',1);const s=buildScene({...newProject(),blocks:[makeBlock('a',2),single]},[image,square]);assert.equal(s.total,3);const squarePlacement=s.placements[1];assert.deepEqual(squarePlacement.frame,{x:2160,y:0,w:1080,h:1350});assert.equal(squarePlacement.rect.w,1080);assert.equal(squarePlacement.rect.h,1080);assert.equal(squarePlacement.rect.y,135);});
+test('recommended portrait fit covers the output while square/landscape singles leave only top-bottom background',()=>{
+  const portrait={id:'p',width:1200,height:1800},square={id:'s',width:1600,height:1600},landscape={id:'l',width:2400,height:1600};
+  const project={...newProject(),blocks:[makeBlock('p',1,recommendFit(portrait,'4:5')),makeBlock('s',1,recommendFit(square,'4:5')),makeBlock('l',1,recommendFit(landscape,'4:5'))]};
+  const scene=buildScene(project,[portrait,square,landscape]);
+  const [p,s,l]=scene.placements;
+  assert.equal(p.rect.x,p.frame.x);assert.ok(p.rect.w>=p.frame.w);assert.ok(p.rect.h>=p.frame.h);
+  for(const placement of [s,l]) {assert.equal(placement.rect.x,placement.frame.x);assert.equal(placement.rect.w,placement.frame.w);assert.ok(placement.rect.h<placement.frame.h);}
+});

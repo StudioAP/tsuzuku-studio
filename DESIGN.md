@@ -82,6 +82,11 @@ components:
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     height: 46px
+  photo-edit-sheet:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.primary}"
+    rounded: "{rounded.lg}"
+    padding: 16px
 ---
 # Tsuzuku Studio Design System
 
@@ -102,7 +107,7 @@ components:
 - **Label**: 操作名と現在値を近接させ、英大文字のeyebrowは装飾的な補助情報に限定する。
 
 ## Layout
-デスクトップはプレビューを主、編集パネルを従とする二列。800px以下は一列にし、写真の順番・掲載ページ数・トリミング・仕上がりを一つの「スタジオ」にまとめる。選択中の写真は安定した位置の並べ替えドックから前後へ一段ずつ動かせ、先頭・末尾へも一度で移動できる。カード自体が動いても操作位置を追いかけさせず、編集や並び替え後は作業位置を保つ。タッチ対象は原則44px以上。前処理は元写真と変更結果を同時に判断できる専用ダイアログに集約する。
+デスクトップはプレビューを主、編集パネルを従とする二列。800px以下は一列にし、写真の順番・掲載ページ数・仕上がりを一つの「スタジオ」にまとめる。個別設定はプレビュー上の写真か写真カードの一タップで全画面の写真編集シートを開き、一覧まで移動する縦スクロールをなくす。戻った時は同じ写真・画面位置を保つ。選択中の写真は安定した位置の並べ替えドックから前後へ一段ずつ動かせ、先頭・末尾へも一度で移動できる。カード自体が動いても操作位置を追いかけさせない。タッチ対象は原則44px以上。前処理は元写真と変更結果を同時に判断できる専用ダイアログに集約する。書き出し操作は編集領域の後に配置し、プレビューや操作部品へ重ねない。
 
 ## Elevation & Depth
 基本は細い境界線で区切り、影は写真プレビューとモーダルだけに使う。写真編集面には淡い植物色のグラデーションを許可するが、コンテンツより強くしない。
@@ -111,9 +116,10 @@ components:
 カードは18px、操作は7〜12pxの角丸。写真そのものは小さい角丸または直角とし、輪郭を曖昧にしない。ピル形状はページ番号や短い状態表示だけに使う。
 
 ## Components
-- **Continuous Preview**: ページ境界を見せつつ、出力画像にガイドを混ぜない。
+- **Continuous Preview**: ページ境界を見せつつ、出力画像にガイドを混ぜない。表示ページ上の写真をタップした場所から、その写真の編集を開く。
 - **Studio Workspace**: 投稿の形、背景、プレビュー、写真一覧、分割枚数、前処理を一つの編集場所に集約する。
 - **Stable Order Dock**: 選択写真の現在位置と、固定配置の「前へ」「次へ」「先頭へ」「末尾へ」を示す。移動でボタンの場所を変えない。
+- **Photo Editing Sheet**: スタジオの写真カードから一タップで入る独立画面。固定ヘッダーと固定の完了操作を備え、編集内容だけを内部スクロールする。一覧のスクロール位置を維持して戻る。
 - **Photo Preparation Dialog**: 写真面を直接1本指でドラッグ、2本指でピンチ拡大できることを主操作にする。元の縦横フレームを固定した回転、±0.1度の微調整、拡大スライダー、中央復帰、四辺トリミング、正方形プリセット、確定と取消も同じ画面に置く。回転・移動中のプレビューに白場を見せない。
 - **Selection Card**: サムネイル、ファイル名、1枚／連結／組み合わせ状態を一読できる。
 - **Primary Button**: 一画面一つ。黄緑面と濃色文字を使う。
@@ -126,6 +132,9 @@ components:
 - Do use direct manipulation on the photo while retaining labeled controls as an accessible fallback.
 - Do keep repeated actions in a stable screen location and offer both one-step and direct-to-edge movement.
 - Do preserve the user's viewport and selected photo after a reorder.
+- Do open per-photo settings directly from the preview or photo card and return to its prior screen position.
+- Do keep the export action in document flow so it never obscures the preview or controls.
+- Do default portraits to frame-filling; let square and landscape singles fill the width and leave the top/bottom to the chosen background.
 - Do preserve one output ratio while allowing differently prepared photos to coexist.
 - Do verify the hardest mobile viewport and the exported pixels.
 - Don't turn the editor into a free-form canvas with hidden gestures.

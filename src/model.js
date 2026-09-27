@@ -66,8 +66,8 @@ export const slideCount = project => project.blocks.reduce((n, block) => n + blo
 export function newProject() {
   return { version: VERSION, id: uid(), title: '新しいカルーセル', ratio: '4:5', theme: 'edge', format: 'jpeg', blocks: [] };
 }
-export function makeBlock(photoId, span = 1) {
-  return { id: uid(), photoIds: [photoId], span, layout: 'single', fit: 'contain', transforms: { [photoId]: neutralTransform() } };
+export function makeBlock(photoId, span = 1, fit = 'contain') {
+  return { id: uid(), photoIds: [photoId], span, layout: 'single', fit, transforms: { [photoId]: neutralTransform() } };
 }
 /** Deterministic, aspect-ratio-based suggestion. Never claims to understand image content. */
 export function recommendSpan(asset, ratio) {
@@ -76,6 +76,18 @@ export function recommendSpan(asset, ratio) {
   if (aspect < 1.2) return 1;
   const slideAspect = RATIOS[ratio].width / RATIOS[ratio].height;
   return clamp(Math.round(aspect / slideAspect), 2, 6);
+}
+/**
+ * Choose a default that avoids side bars: portraits fill their frame, while
+ * square/landscape singles fit to width and leave the output background above
+ * and below. For a wide strip, cover only when contain would expose the sides.
+ */
+export function recommendFit(asset, ratio, span = 1) {
+  const size = effectiveAssetSize(asset);
+  const aspect = size.width / size.height;
+  const output = RATIOS[ratio];
+  const stripAspect = output.width * span / output.height;
+  return aspect < 1 || aspect < stripAspect ? 'cover' : 'contain';
 }
 export function autoBlocks(assets, ratio, budget = MAX_SLIDES) {
   if (assets.length > budget) throw new Error(`写真は${budget}枚以内にしてください。`);
@@ -89,7 +101,7 @@ export function autoBlocks(assets, ratio, budget = MAX_SLIDES) {
     blocks[index].span -= 1;
     total -= 1;
   }
-  return blocks;
+  return blocks.map((block, index) => ({ ...block, fit: recommendFit(assets[index], ratio, block.span) }));
 }
 export function moveBlock(project, index, direction) {
   const target = index + direction;
