@@ -38,6 +38,7 @@ export class Studio {
     document.addEventListener('pointercancel', event => this.onPreprocessPointerUp(event));
     this.dialog.addEventListener('cancel', () => { this.exportController?.abort(); this.closePreprocess(); });
     this.photoEditDialog.addEventListener('close', () => {
+      this.schedulePreview();
       const card = [...document.querySelectorAll('.block-select')].find(button => button.dataset.id === this.selected);
       const page = this.photoEditReturnPage;
       const previewPhoto = Number.isInteger(page)
@@ -225,11 +226,20 @@ export class Studio {
   }
   openPhotoEditor(returnPage = null) {
     if (!this.selectedBlock()) return;
-    this.photoEditDialog.innerHTML = this.photoEditorHTML();
     this.photoEditReturnScroll = { x: window.scrollX, y: window.scrollY };
     this.photoEditReturnPage = returnPage;
+    this.photoEditDialog.innerHTML = this.photoEditorHTML();
     this.photoEditDialog.showModal();
     this.photoEditDialog.querySelector('[data-action="close-photo-editor"]')?.focus();
+    if (Number.isInteger(returnPage)) {
+      const strip = this.photoEditDialog.querySelector('.photo-editor-preview-strip');
+      const page = [...this.photoEditDialog.querySelectorAll('.photo-editor-preview-page')].find(item => Number(item.dataset.page) === returnPage);
+      if (strip && page) {
+        const stripRect = strip.getBoundingClientRect(), pageRect = page.getBoundingClientRect();
+        strip.scrollLeft = Math.max(0, strip.scrollLeft + pageRect.left - stripRect.left - Math.max(0, (strip.clientWidth - pageRect.width) / 2));
+      }
+    }
+    this.schedulePreview();
   }
   editPreviewAt(page, clientX, clientY, canvas) {
     let pageStart = 0, block = null;
@@ -277,6 +287,7 @@ export class Studio {
     const oldBlockList = document.querySelector('.block-list');
     const blockListScroll = oldBlockList?.scrollTop || 0;
     const photoEditScroll = this.photoEditDialog.querySelector('.photo-editor-scroll')?.scrollTop || 0;
+    const photoEditPreviewScroll = this.photoEditDialog.querySelector('.photo-editor-preview-strip')?.scrollLeft || 0;
     const oldEditAction = this.photoEditDialog.open ? document.activeElement?.dataset?.action : null;
     const oldEditValue = this.photoEditDialog.open ? document.activeElement?.dataset?.value : null;
     const count = slideCount(this.project);
@@ -298,6 +309,8 @@ export class Studio {
         this.photoEditDialog.innerHTML = this.photoEditorHTML();
         const editScroll = this.photoEditDialog.querySelector('.photo-editor-scroll');
         if (editScroll) editScroll.scrollTop = photoEditScroll;
+        const previewScroll = this.photoEditDialog.querySelector('.photo-editor-preview-strip');
+        if (previewScroll) previewScroll.scrollLeft = photoEditPreviewScroll;
         if (oldEditAction) {
           const focusTarget = [...this.photoEditDialog.querySelectorAll('[data-action]')].find(element => element.dataset.action === oldEditAction && (oldEditValue === null || element.dataset.value === oldEditValue));
           focusTarget?.focus({ preventScroll: true });
@@ -377,13 +390,24 @@ export class Studio {
   }
   photoEditorHTML() {
     const block = this.selectedBlock(); if (!block) return '';
+    if (!block.photoIds.includes(this.selectedPhoto)) this.selectedPhoto = block.photoIds[0];
     const index = this.project.blocks.findIndex(item => item.id === block.id);
     const first = this.project.blocks.slice(0, index).reduce((total, item) => total + item.span, 1);
     const last = first + block.span - 1;
     const names = block.photoIds.map(id => this.asset(id)?.name || '写真').join(' + ');
+    const selectedName = this.asset(this.selectedPhoto)?.name || names;
+    const selectedPhotoIndex = block.photoIds.indexOf(this.selectedPhoto);
     const subtitle = block.layout === 'single' ? `${block.span === 1 ? '1枚で見せる' : `${block.span}枚につなぐ`}` : block.layout === 'duo' ? '2枚を並べる' : '重ねてつなぐ';
+    const selectionLabel = block.photoIds.length === 2 ? `選択中 · 写真 ${selectedPhotoIndex + 1}/${block.photoIds.length} · ${subtitle}` : `選択中の写真 · ${subtitle}`;
     const dimensions = RATIOS[this.project.ratio];
-    return `<div class="photo-editor-screen"><header class="photo-editor-header"><button class="photo-editor-back" data-action="close-photo-editor" aria-label="スタジオに戻る">‹ <span>スタジオ</span></button><div class="photo-editor-title"><p class="eyebrow">写真 ${num(index + 1)} / ${num(this.project.blocks.length)} · 投稿 ${num(first)}${last !== first ? `–${num(last)}` : ''}</p><h2 id="photo-edit-title">${escapeHTML(names)}</h2><p>${subtitle}</p></div><button class="icon-button photo-editor-close" data-action="close-photo-editor" aria-label="編集を終えてスタジオに戻る">${icon('close')}</button></header><div class="photo-editor-scroll"><div class="photo-editor-context"><span class="photo-editor-thumbs fit-${block.fit} theme-${this.project.theme} ${block.photoIds.length === 2 ? 'paired' : ''}" style="aspect-ratio:${dimensions.width}/${dimensions.height}">${block.photoIds.map(id => `<img src="${this.urls.get(id)}" alt="" width="58" height="68">`).join('')}</span><span><strong>${escapeHTML(subtitle)}</strong><small>いまの収まり · ここで変えると仕上がりに反映</small></span></div>${this.controlsHTML()}</div><footer class="photo-editor-footer"><div class="photo-editor-history"><button class="text-button" data-action="undo" ${disabled(!this.history.length || this.busy)}>${icon('restore')} 戻す</button><button class="text-button" data-action="redo" ${disabled(!this.future.length || this.busy)}>やり直す</button></div><button class="button primary" data-action="close-photo-editor">編集を終える ${icon('arrow')}</button></footer></div>`;
+    const startPage = first - 1;
+    const previewFocusPage = Number.isInteger(this.photoEditReturnPage) ? this.photoEditReturnPage : startPage;
+    const previewPages = Array.from({ length: block.span }, (_, offset) => {
+      const page = startPage + offset;
+      return `<figure class="photo-editor-preview-page ${block.span === 1 ? 'single' : ''} ${page === previewFocusPage ? 'is-current' : ''}" data-page="${page}" style="aspect-ratio:${dimensions.width}/${dimensions.height}"><canvas width="320" height="${Math.round(dimensions.height * 320 / dimensions.width)}" data-rendered="false" aria-label="投稿 ${num(page + 1)}枚目の仕上がり"></canvas><figcaption>${num(page + 1)}</figcaption></figure>`;
+    }).join('');
+    const previousDisabled = index === 0 || this.busy, nextDisabled = index === this.project.blocks.length - 1 || this.busy;
+    return `<div class="photo-editor-screen"><header class="photo-editor-header"><button class="photo-editor-back" data-action="close-photo-editor" aria-label="スタジオに戻る">‹ <span>スタジオ</span></button><div class="photo-editor-identity"><img class="photo-editor-selected-thumb" src="${this.urls.get(this.selectedPhoto)}" alt="" width="42" height="46"><div class="photo-editor-title"><p class="eyebrow">セット ${num(index + 1)} / ${num(this.project.blocks.length)} · 投稿 ${num(first)}${last !== first ? `–${num(last)}` : ''}</p><h2 id="photo-edit-title">${escapeHTML(selectedName)}</h2><p class="photo-editor-selected-status"><span aria-hidden="true"></span>${escapeHTML(selectionLabel)}</p></div></div><button class="icon-button photo-editor-close" data-action="close-photo-editor" aria-label="編集を終えてスタジオに戻る">${icon('close')}</button></header><div class="photo-editor-scroll"><section class="photo-editor-live" aria-label="仕上がりプレビュー"><div class="photo-editor-live-heading"><strong>仕上がり</strong><span>${block.span > 1 ? `${block.span}枚 · 横へ送ってつながりを確認` : 'この1枚の投稿イメージ'}</span></div><div class="photo-editor-preview-strip ${block.span === 1 ? 'single' : ''}" role="group" aria-label="写真の仕上がり。横にスクロールできます" tabindex="0">${previewPages}</div></section><div class="photo-editor-context"><span class="photo-editor-thumbs fit-${block.fit} theme-${this.project.theme} ${block.photoIds.length === 2 ? 'paired' : ''}" style="aspect-ratio:${dimensions.width}/${dimensions.height}">${block.photoIds.map(id => `<img src="${this.urls.get(id)}" alt="" width="58" height="68">`).join('')}</span><span class="photo-editor-context-copy"><strong>選択中の元写真</strong><small>${escapeHTML(subtitle)} · 変更は仕上がりに反映されます</small></span><span class="photo-editor-navigation" role="group" aria-label="編集する写真を切り替え"><button class="photo-editor-step" data-action="editor-step" data-direction="-1" ${disabled(previousDisabled)} aria-label="前の写真"><span aria-hidden="true">‹</span><small>前へ</small></button><button class="photo-editor-step" data-action="editor-step" data-direction="1" ${disabled(nextDisabled)} aria-label="次の写真"><span aria-hidden="true">›</span><small>次へ</small></button></span></div>${this.controlsHTML()}</div><footer class="photo-editor-footer"><div class="photo-editor-history"><button class="text-button" data-action="undo" ${disabled(!this.history.length || this.busy)}>${icon('restore')} 戻す</button><button class="text-button" data-action="redo" ${disabled(!this.future.length || this.busy)}>やり直す</button></div><button class="button primary" data-action="close-photo-editor">編集を終える ${icon('arrow')}</button></footer></div>`;
   }
   orderDockHTML() {
     const block = this.selectedBlock(); if (!block) return '';
@@ -408,15 +432,19 @@ export class Studio {
     if (!this.assets.length || this.busy) return;
     this.previewController?.abort();
     const controller = new AbortController(); this.previewController = controller;
-    const canvases = [...document.querySelectorAll('.preview-tile canvas')];
+    const pages = this.photoEditDialog.open
+      ? [...this.photoEditDialog.querySelectorAll('.photo-editor-preview-page')]
+      : [...document.querySelectorAll('.preview-tile')];
+    const targets = pages.map(page => ({ canvas: page.querySelector('canvas'), page: Number(page.dataset.page) })).filter(item => item.canvas && Number.isInteger(item.page));
     const pool = new ImagePool(this.assets, controller.signal);
     try {
       const scene = buildScene(this.project, this.assets);
       const warning = document.querySelector('#quality-warning');
       const low = lowResolutionIds(scene, this.assets);
       if (warning) { warning.hidden = !low.length; warning.textContent = low.length ? `選んだ配置では${low.length}枚の写真が大きく拡大されます。ぼやける場合は分割枚数や拡大率を減らしてください。` : ''; }
-      for (let index = 0; index < canvases.length; index++) {
-        await drawPage(canvases[index], scene, index, pool, 320, controller.signal);
+      for (const target of targets) {
+        await drawPage(target.canvas, scene, target.page, pool, 320, controller.signal);
+        target.canvas.dataset.rendered = 'true';
         await yieldToUI();
       }
       const label = document.querySelector('#preview-status');
@@ -529,7 +557,7 @@ export class Studio {
     } finally { this.sharing=false; button.disabled=false; }
   }
   showHelp() {
-    this.dialog.innerHTML = `<div class="dialog-header"><span class="eyebrow">A LITTLE GUIDE</span><button class="icon-button" data-action="close-dialog" aria-label="使い方を閉じる">${icon('close')}</button></div><h2 class="dialog-title">「つづく」の使い方。</h2><div class="help-copy"><h3>写真を選ぶだけで、まずは完成。</h3><p>縦横比を見て、横長の写真を2枚以上に、縦長の写真を1枚に配置します。新しく取り込んだ縦写真は枠いっぱい、正方形・横写真は横幅を埋める配置から始まります。写真の内容を理解するAIではなく、形に合わせるおまかせ機能です。</p><h3>プレビューの写真をタップして個別編集。</h3><p>スタジオのプレビュー写真か写真カードをタップすると、専用の編集画面が開きます。写真一覧の下まで移動せず、掲載枚数・組み合わせ・収め方を整えられます。元写真の傾きや切り取りは「元写真を整える」から編集します。</p><h3>配置の前に、元写真を整える。</h3><p>写真ごとの「元写真を整える」で、写真を1本指で移動、2本指で拡大できます。傾きと上下左右の不要部分も調整でき、白場が出る位置には動きません。「正方形にする」後も写真を直接動かせます。「正方形＋上下余白の1枚にする」なら、横写真の連結と同じ投稿に混ぜられます。編集は非破壊で、元ファイルを変更しません。</p><h3>横長写真を、ひとつながりに。</h3><p>編集画面で「何枚につなぐ？」を2枚にします。「全体を残す」なら写真を切らずに配置。「枠いっぱい」なら、余白をなくす代わりにはみ出す部分を切り取ります。内部の境界には余白を入れません。</p><h3>2枚を組み合わせる。</h3><p>「次の写真と組み合わせる」で隣り合う写真を一組にできます。「重ねてつなぐ」は写真をページ境界にまたがるレイアウトに。「2枚を並べる」なら、1ページでは上下、2ページ以上では左右に配置します。</p><h3>保存して、Instagramで投稿。</h3><p>書き出し後に共有メニューを開き、「画像を保存」があれば選択します。見つからない場合は1枚ずつ保存してください。Instagramアプリでは番号順に複数選択し、同じ比率のまま投稿します。自動投稿やInstagramログインは使いません。</p><h3>写真と下書きについて。</h3><p>写真はサーバーへ送信せず、ブラウザの中で処理します。下書きはこの端末のブラウザ内に自動保存しますが、プライベートブラウズ・容量不足・ブラウザデータ削除などで失われることがあります。大切な編集は「下書きを持ち出す」で保存してください。別の端末には自動同期しません。同じ編集は1つのタブで行ってください。</p><p>JPEG・PNG・WebPに対応。HEICはブラウザが読み込める場合に対応し、対応するSafariでの利用を想定しています。透明部分は白に、写真は長辺4096px・約8MP以内の作業用JPEGに変換します。元の写真は変更しません。最大20写真、出力20枚、写真1枚40MBまでです。巨大な写真は端末メモリの制限で失敗する場合があります。</p><p>初回表示には通信が必要です。アプリ本体の配信先には一般的なアクセスログが残る場合がありますが、写真のアップロード先や解析サービスは設けていません。</p></div><button class="button primary" data-action="close-dialog">はじめよう ${icon('arrow')}</button>`;
+    this.dialog.innerHTML = `<div class="dialog-header"><span class="eyebrow">A LITTLE GUIDE</span><button class="icon-button" data-action="close-dialog" aria-label="使い方を閉じる">${icon('close')}</button></div><h2 class="dialog-title">「つづく」の使い方。</h2><div class="help-copy"><h3>写真を選ぶだけで、まずは完成。</h3><p>縦横比を見て、横長の写真を2枚以上に、縦長の写真を1枚に配置します。新しく取り込んだ縦写真は枠いっぱい、正方形・横写真は横幅を埋める配置から始まります。写真の内容を理解するAIではなく、形に合わせるおまかせ機能です。</p><h3>プレビューの写真をタップして個別編集。</h3><p>スタジオのプレビュー写真か写真カードをタップすると、専用の編集画面が開きます。仕上がりを見ながら掲載枚数・組み合わせ・収め方を整え、前後の写真へそのまま移れます。元写真の傾きや切り取りは「元写真を整える」から編集します。</p><h3>配置の前に、元写真を整える。</h3><p>写真ごとの「元写真を整える」で、写真を1本指で移動、2本指で拡大できます。傾きと上下左右の不要部分も調整でき、白場が出る位置には動きません。「正方形にする」後も写真を直接動かせます。「正方形＋上下余白の1枚にする」なら、横写真の連結と同じ投稿に混ぜられます。編集は非破壊で、元ファイルを変更しません。</p><h3>横長写真を、ひとつながりに。</h3><p>編集画面で「何枚につなぐ？」を2枚にします。「全体を残す」なら写真を切らずに配置。「枠いっぱい」なら、余白をなくす代わりにはみ出す部分を切り取ります。内部の境界には余白を入れません。</p><h3>2枚を組み合わせる。</h3><p>「次の写真と組み合わせる」で隣り合う写真を一組にできます。「重ねてつなぐ」は写真をページ境界にまたがるレイアウトに。「2枚を並べる」なら、1ページでは上下、2ページ以上では左右に配置します。</p><h3>保存して、Instagramで投稿。</h3><p>書き出し後に共有メニューを開き、「画像を保存」があれば選択します。見つからない場合は1枚ずつ保存してください。Instagramアプリでは番号順に複数選択し、同じ比率のまま投稿します。自動投稿やInstagramログインは使いません。</p><h3>写真と下書きについて。</h3><p>写真はサーバーへ送信せず、ブラウザの中で処理します。下書きはこの端末のブラウザ内に自動保存しますが、プライベートブラウズ・容量不足・ブラウザデータ削除などで失われることがあります。大切な編集は「下書きを持ち出す」で保存してください。別の端末には自動同期しません。同じ編集は1つのタブで行ってください。</p><p>JPEG・PNG・WebPに対応。HEICはブラウザが読み込める場合に対応し、対応するSafariでの利用を想定しています。透明部分は白に、写真は長辺4096px・約8MP以内の作業用JPEGに変換します。元の写真は変更しません。最大20写真、出力20枚、写真1枚40MBまでです。巨大な写真は端末メモリの制限で失敗する場合があります。</p><p>初回表示には通信が必要です。アプリ本体の配信先には一般的なアクセスログが残る場合がありますが、写真のアップロード先や解析サービスは設けていません。</p></div><button class="button primary" data-action="close-dialog">はじめよう ${icon('arrow')}</button>`;
     this.dialog.showModal();
   }
   async onClick(event) {
@@ -586,6 +614,17 @@ export class Studio {
         case 'view': this.previewMode=button.dataset.value; this.render(); break;
         case 'select': this.selected=button.dataset.id; this.selectedPhoto=null; this.render(); this.focusSelectedPreview(); this.openPhotoEditor(); break;
         case 'edit-page': this.editPreviewAt(Number(button.dataset.page), event.clientX, event.clientY, button.querySelector('canvas')); break;
+        case 'editor-step': {
+          const current=this.project.blocks.findIndex(block=>block.id===this.selected), direction=Number(button.dataset.direction), target=current+direction;
+          if(target<0 || target>=this.project.blocks.length) break;
+          this.selected=this.project.blocks[target].id; this.selectedPhoto=this.project.blocks[target].photoIds[0];
+          this.photoEditReturnPage=this.project.blocks.slice(0,target).reduce((sum,block)=>sum+block.span,0);
+          this.render(); this.focusSelectedPreview();
+          const strip=this.photoEditDialog.querySelector('.photo-editor-preview-strip'); if(strip) strip.scrollLeft=0;
+          const focusDirection=target===0 ? 1 : target===this.project.blocks.length-1 ? -1 : direction;
+          this.photoEditDialog.querySelector(`[data-action="editor-step"][data-direction="${focusDirection}"]`)?.focus({preventScroll:true});
+          break;
+        }
         case 'photo-target': this.selectedPhoto=button.dataset.id; this.render(); document.querySelector('.fine-tune')?.setAttribute('open',''); break;
         case 'preprocess-open': await this.openPreprocess(button.dataset.id); break;
         case 'square-single': {
