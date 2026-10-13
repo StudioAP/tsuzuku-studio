@@ -1,5 +1,15 @@
 # 検証と実機チェック
 
+## 2026-10-13 操作の往復を減らす点検
+
+`tests/browser-efficiency.py`で、375×667、390×844、320×700、1280×800、1440×900の合成デモ操作を確認。固定の写真移動／切り取り入口、同じ位置での連続並べ替え、組写真の対象変更と変形値の独立、設定の展開状態、前処理の写真と確定操作の同時表示、極端なトリミングでも操作領域が動かないこと、キャンセル／適用を検査する。変更前の点検結果と代表経路は`UX_AUDIT.md`へ記録。
+
+```bash
+.venv/bin/python tests/browser-efficiency.py --base-url http://127.0.0.1:5173/dist/ --artifacts output/playwright/efficiency
+```
+
+ローカルでcheck、91件の単体テスト、build、既存24シナリオのブラウザsmoke、5画面サイズの追加操作検査がPASS。公式DESIGN.md lintもエラー・警告0。成果物は`output/playwright/`配下。これらはChromiumによる検査であり、実機iPhone SafariのHEIC・写真保存・共有シート・Instagram投稿は未確認。
+
 ## 2026-09-28 編集画面のライブ仕上がりと連続移動
 
 Macのローカル実装とGitHub Pages公開版で `npm run check`、91件の単体テスト、`npm run build` を実施。前後の写真を編集画面から切り替えられること、編集設定を変更すると対象ブロックの出力プレビューに反映すること、選択写真のサムネイル・名前・組み合わせ内の位置が固定ヘッダーに残ることをブラウザ検証へ追加。
